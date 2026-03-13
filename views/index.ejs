@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= title %></title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- Ambient glows -->
+<div class="ambient-glow ambient-glow--1"></div>
+<div class="ambient-glow ambient-glow--2"></div>
+
+<div class="page-wrapper">
+
+  <!-- Navigation -->
+  <nav class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="/" class="nav__logo">
+        <span class="nav__logo-dot"></span>
+        Kuzielum
+      </a>
+      <ul class="nav__links">
+        <li><a href="#projects">Apps</a></li>
+        <li><a href="https://github.com" target="_blank" rel="noopener">GitHub</a></li>
+        <li><span class="nav__count" id="projectCount"><%= apps.length %> App<%= apps.length !== 1 ? 's' : '' %></span></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero container">
+    <div class="hero__tag">
+      <span class="hero__tag-line"></span>
+      Killer Web Apps
+      <span class="hero__tag-line"></span>
+    </div>
+    <h1 class="hero__title">Kuzielum</h1>
+    <p class="hero__subtitle">
+      A curated collection of killer web apps — handcrafted static sites and interactive web experiments, built, refined, and shared with the world.
+    </p>
+    <div class="hero__divider"></div>
+  </header>
+
+  <!-- Apps Section -->
+  <section class="projects container" id="projects">
+    <div class="section-header reveal">
+      <h2 class="section-header__title">Killer Web Apps</h2>
+      <span class="section-header__count" id="gridCount"><%= apps.length %> app<%= apps.length !== 1 ? 's' : '' %></span>
+    </div>
+
+    <div class="filters reveal" id="filters">
+      <!-- Generated client-side from app data -->
+    </div>
+
+    <div class="project-grid" id="projectGrid">
+      <!-- Generated client-side from app data -->
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__inner">
+        <span class="footer__brand">Kuzielum</span>
+        <span class="footer__copy">&copy; <span id="year"></span> — All rights reserved</span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<!-- Inject server data into the client -->
+<script>
+  const APPS = <%- JSON.stringify(apps) %>;
+</script>
+<script src="/js/main.js"></script>
+</body>
+</html>
