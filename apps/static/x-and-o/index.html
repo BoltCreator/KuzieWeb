@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe Game vs AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #game {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 5px;
+            margin: 20px auto;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #333;
+            font-size: 60px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            transition: background-color 0.3s;
+        }
+        .cell:hover {
+            background-color: #f0f0f0;
+        }
+        #status {
+            margin: 20px 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        #reset {
+            font-size: 18px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #reset:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <h1>Tic Tac Toe vs AI</h1>
+        <div id="board"></div>
+        <div id="status"></div>
+        <button id="reset">Reset Game</button>
+    </div>
+
+    <script>
+        let gameState = ['', '', '', '', '', '', '', '', ''];
+        let gameActive = true;
+        const human = 'X';
+        const ai = 'O';
+        let currentPlayer = human;
+
+        const winningConditions = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+
+        function handleCellClick(clickedCellIndex) {
+            if (gameState[clickedCellIndex] !== '' || !gameActive || currentPlayer !== human) {
+                return;
+            }
+
+            gameState[clickedCellIndex] = human;
+            document.querySelectorAll('.cell')[clickedCellIndex].textContent = human;
+
+            if (checkForWin()) {
+                endGame(false);
+                return;
+            }
+            if (checkForDraw()) {
+                endGame(true);
+                return;
+            }
+
+            currentPlayer = ai;
+            updateStatus();
+            setTimeout(aiMove, 500); // Delay AI move for better UX
+        }
+
+        function aiMove() {
+            if (!gameActive) return;
+
+            let bestScore = -Infinity;
+            let bestMove;
+
+            for (let i = 0; i < 9; i++) {
+                if (gameState[i] === '') {
+                    gameState[i] = ai;
+                    let score = minimax(gameState, 0, false);
+                    gameState[i] = '';
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = i;
+                    }
+                }
+            }
+
+            gameState[bestMove] = ai;
+            document.querySelectorAll('.cell')[bestMove].textContent = ai;
+
+            if (checkForWin()) {
+                endGame(false);
+                return;
+            }
+            if (checkForDraw()) {
+                endGame(true);
+                return;
+            }
+
+            currentPlayer = human;
+            updateStatus();
+        }
+
+        function minimax(board, depth, isMaximizing) {
+            if (checkWin(board, ai)) return 1;
+            if (checkWin(board, human)) return -1;
+            if (checkDraw(board)) return 0;
+
+            if (isMaximizing) {
+                let bestScore = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        board[i] = ai;
+                        let score = minimax(board, depth + 1, false);
+                        board[i] = '';
+                        bestScore = Math.max(score, bestScore);
+                    }
+                }
+                return bestScore;
+            } else {
+                let bestScore = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === '') {
+                        board[i] = human;
+                        let score = minimax(board, depth + 1, true);
+                        board[i] = '';
+                        bestScore = Math.min(score, bestScore);
+                    }
+                }
+                return bestScore;
+            }
+        }
+
+        function checkWin(board, player) {
+            for (let condition of winningConditions) {
+                if (condition.every(index => board[index] === player)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function checkForWin() {
+            return checkWin(gameState, currentPlayer);
+        }
+
+        function checkDraw(board) {
+            return board.every(cell => cell !== '');
+        }
+
+        function checkForDraw() {
+            return checkDraw(gameState);
+        }
+
+        function endGame(draw) {
+            gameActive = false;
+            if (draw) {
+                document.getElementById('status').textContent = "It's a draw!";
+            } else {
+                document.getElementById('status').textContent = `${currentPlayer === human ? 'You win!' : 'AI wins!'}`;
+            }
+        }
+
+        function updateStatus() {
+            const status = document.getElementById('status');
+            status.textContent = currentPlayer === human ? "Your turn" : "AI's turn";
+        }
+
+        function resetGame() {
+            gameState = ['', '', '', '', '', '', '', '', ''];
+            gameActive = true;
+            currentPlayer = human;
+            document.querySelectorAll('.cell').forEach(cell => cell.textContent = '');
+            updateStatus();
+        }
+
+        // Initialize game
+        const board = document.getElementById('board');
+        for (let i = 0; i < 9; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.addEventListener('click', () => handleCellClick(i));
+            board.appendChild(cell);
+        }
+
+        document.getElementById('reset').addEventListener('click', resetGame);
+
+        updateStatus();
+    </script>
+</body>
+</html>

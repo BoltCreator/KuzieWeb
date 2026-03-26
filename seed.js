@@ -10,16 +10,52 @@ const App = require('./models/App');
 
 const seedApps = [
   {
-    title: 'Portfolio Site',
-    slug: 'portfolio-site',
-    description: 'A clean, responsive personal portfolio showcasing work, skills, and contact info across multiple pages.',
+    title: 'X and O',
+    slug: 'gaming',
+    description: 'Play x and o against the computer',
+    category: 'Gaming',
+    type: 'static',
+    tech: ['HTML', 'CSS', 'JS'],
+    pages: 1,
+    folder: 'x-and-o',
+    pattern: 'grid',
+    order: 1
+  },
+  {
+    title: 'Vector Designer',
+    slug: 'designing',
+    description: 'Design your graphics using this awesome application',
     category: 'Website',
     type: 'static',
     tech: ['HTML', 'CSS', 'JS'],
-    pages: 4,
-    folder: 'portfolio-site',
+    pages: 1,
+    folder: 'vector-designer',
     pattern: 'grid',
-    order: 1
+    order: 2
+  },
+  {
+    title: 'Kinematic Simulator',
+    slug: 'simulating',
+    description: 'Create 2d mechanical designs and simulators',
+    category: 'Website',
+    type: 'static',
+    tech: ['HTML', 'CSS', 'JS'],
+    pages: 1,
+    folder: 'kinematic-simulator',
+    pattern: 'grid',
+    order: 3
+  },
+  {
+    title: 'Chess',
+    slug: 'chess',
+    description: 'Play chess against n AI engine with various difficulty levels',
+    category: 'Gaming',
+    type: 'static',
+    tech: ['HTML', 'CSS', 'JS'],
+    pages: 1,
+    folder: 'chess',
+    pattern: 'grid',
+    order: 4
   },
   {
     title: 'Landing Page',
@@ -31,7 +67,7 @@ const seedApps = [
     pages: 1,
     folder: 'landing-page',
     pattern: 'dots',
-    order: 2
+    order: 5
   },
   {
     title: 'Interactive Quiz',
@@ -43,7 +79,7 @@ const seedApps = [
     pages: 3,
     folder: 'interactive-quiz',
     pattern: 'circles',
-    order: 3
+    order: 6
   },
   {
     title: 'Notes App',
@@ -57,27 +93,33 @@ const seedApps = [
     entryFile: 'index.js',
     usesDatabase: true,
     pattern: 'diagonal',
-    order: 4
+    order: 7
   }
 ];
 
-async function seed() {
-  await connectDB();
+// ── Export for auto-seed in server.js ──
+module.exports = { seedApps };
 
-  console.log('  Clearing existing apps...');
-  await App.deleteMany({});
+// ── Run standalone: npm run seed ──
+if (require.main === module) {
+  async function seed() {
+    await connectDB();
 
-  console.log('  Seeding example apps...');
-  const created = await App.insertMany(seedApps);
+    console.log('  Clearing existing apps...');
+    await App.deleteMany({});
 
-  console.log(`  ✓ Seeded ${created.length} apps:`);
-  created.forEach(a => console.log(`    • ${a.title} (${a.type})`));
+    console.log('  Seeding example apps...');
+    const created = await App.insertMany(seedApps);
 
-  await mongoose.connection.close();
-  console.log('  ✓ Done.\n');
+    console.log(`  ✓ Seeded ${created.length} apps:`);
+    created.forEach(a => console.log(`    • ${a.title} (${a.type})`));
+
+    await mongoose.connection.close();
+    console.log('  ✓ Done.\n');
+  }
+
+  seed().catch(err => {
+    console.error('Seed error:', err);
+    process.exit(1);
+  });
 }
-
-seed().catch(err => {
-  console.error('Seed error:', err);
-  process.exit(1);
-});

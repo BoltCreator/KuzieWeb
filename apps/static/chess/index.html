@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chess — Play the Engine</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- Engine -->
+    <script src="square.js"></script>
+    <script src="piece.js"></script>
+    <script src="move.js"></script>
+    <script src="brain.js"></script>
+    <script src="selectPiece.js"></script>
+    <script src="chessboard.js"></script>
+
+    <!-- App entry -->
+    <script src="sketch.js"></script>
+  </head>
+
+  <body class="no-select" onload="setup();">
+    <div class="grain"></div>
+
+    <!-- ── Header ──────────────────────────────────────────────────── -->
+    <header class="site-header">
+      <div class="logo-group">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2 L12 5 M9 5 L15 5 M10 5 L8 10 L10 10 L9 16 L15 16 L14 10 L16 10 L14 5"/>
+          <path d="M8 16 L7 20 L17 20 L16 16"/>
+          <path d="M6 20 L18 20"/>
+        </svg>
+        <h1 class="site-title">Chess Engine</h1>
+      </div>
+      <p class="site-subtitle" id="gamestate">Your move</p>
+    </header>
+
+    <!-- ── Main layout ─────────────────────────────────────────────── -->
+    <main class="game-layout">
+
+      <!-- LEFT PANEL — controls (desktop sidebar / mobile: above board) -->
+      <aside class="panel panel-left">
+        <section class="panel-section">
+          <h3 class="panel-heading">New Game</h3>
+          <div class="btn-row">
+            <button class="btn btn-primary active" data-mode="white" onclick="playAsWhite()">
+              <span class="piece-icon white-king"></span> White
+            </button>
+            <button class="btn btn-primary" data-mode="black" onclick="playAsBlack()">
+              <span class="piece-icon black-king"></span> Black
+            </button>
+          </div>
+          <div class="btn-row" style="margin-top:6px;">
+            <button class="btn btn-secondary" data-mode="2player" onclick="playTwoPlayer()" style="flex:1;">
+              👥 2 Player
+            </button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h3 class="panel-heading">Difficulty</h3>
+          <div class="difficulty-group" id="difficultyGroup">
+            <button class="btn btn-diff" data-level="easy" onclick="playEasy()">Easy</button>
+            <button class="btn btn-diff active" data-level="medium" onclick="playMedium()">Medium</button>
+            <button class="btn btn-diff" data-level="hard" onclick="playHard()">Hard</button>
+          </div>
+          <p class="meta-text" id="searchInfo">Depth limit: 1 s</p>
+        </section>
+
+        <section class="panel-section">
+          <h3 class="panel-heading">Controls</h3>
+          <div class="btn-row">
+            <button class="btn btn-secondary" onclick="undo()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              Undo
+            </button>
+            <button class="btn btn-secondary" onclick="flip()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              Flip
+            </button>
+          </div>
+          <div class="btn-row" style="margin-top:6px;">
+            <button class="btn btn-secondary" id="btnSound" style="flex:1;">🔊 Sound</button>
+            <button class="btn btn-secondary" id="btnPremove" onclick="togglePremoves()" style="flex:1;">⚡ Premove</button>
+          </div>
+        </section>
+
+        <section class="panel-section captured-section">
+          <h3 class="panel-heading">Captured</h3>
+          <div class="captured-row" id="capturedWhite"></div>
+          <div class="captured-row" id="capturedBlack"></div>
+        </section>
+      </aside>
+
+      <!-- CENTRE — the board -->
+      <div class="board-wrapper">
+        <div class="coord-row coord-top" id="coordTop"></div>
+
+        <div class="board-and-files">
+          <div class="coord-col coord-left" id="coordLeft"></div>
+          <div class="canvas-frame">
+            <canvas id="game" width="560" height="560"></canvas>
+          </div>
+          <div class="coord-col coord-right" id="coordRight"></div>
+        </div>
+
+        <div class="coord-row coord-bottom" id="coordBottom"></div>
+
+        <div class="turn-bar">
+          <span class="turn-dot" id="turnDot"></span>
+          <span class="turn-label" id="turnLabel">White to move</span>
+        </div>
+
+        <!-- Mobile/tablet: compact nav + last move right under the board -->
+        <div class="board-controls-bar" id="boardControlsBar">
+          <div class="bcb-moves" id="bcbMoves">
+            <span class="bcb-placeholder">No moves yet</span>
+          </div>
+          <div class="bcb-nav">
+            <button class="btn-nav" onclick="reviewStart()" id="navStartM" disabled>⟨⟨</button>
+            <button class="btn-nav" onclick="reviewPrev()" id="navPrevM" disabled>⟨</button>
+            <button class="btn-nav" onclick="reviewNext()" id="navNextM" disabled>⟩</button>
+            <button class="btn-nav" onclick="reviewEnd()" id="navEndM" disabled>⟩⟩</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL — move history + engine (desktop sidebar / mobile: below board) -->
+      <aside class="panel panel-right">
+        <section class="panel-section">
+          <h3 class="panel-heading">Moves</h3>
+          <div class="move-list" id="moveList">
+            <p class="empty-moves">No moves yet</p>
+          </div>
+          <div class="move-nav">
+            <button class="btn-nav" id="navStart" onclick="reviewStart()" disabled title="Start (Home)">⟨⟨</button>
+            <button class="btn-nav" id="navPrev" onclick="reviewPrev()" disabled title="Previous (←)">⟨</button>
+            <button class="btn-nav" id="navNext" onclick="reviewNext()" disabled title="Next (→)">⟩</button>
+            <button class="btn-nav" id="navEnd" onclick="reviewEnd()" disabled title="Live (End)">⟩⟩</button>
+          </div>
+        </section>
+
+        <section class="panel-section engine-info">
+          <h3 class="panel-heading">Engine</h3>
+          <div class="stat-row"><span class="stat-label">Depth</span><span class="stat-value" id="statDepth">—</span></div>
+          <div class="stat-row"><span class="stat-label">Nodes</span><span class="stat-value" id="statEval">—</span></div>
+        </section>
+      </aside>
+
+    </main>
+
+    <footer class="site-footer">
+      <p>Engine &amp; GUI by <strong>Oluchukwu Okafor</strong> — pure JavaScript, zero dependencies</p>
+    </footer>
+  </body>
+</html>
