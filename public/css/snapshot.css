@@ -1,0 +1,42 @@
+/* ========== LIVE SNAPSHOT PREVIEW ========== */
+.project-card__preview-snapshot {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+.project-card__preview-snapshot iframe {
+  width: 1280px;
+  height: 800px;
+  border: none;
+  pointer-events: none;
+  transform-origin: top left;
+  transform: scale(0.3);
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.project-card__preview-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  cursor: pointer;
+}
+
+/* ========== CUSTOM SVG PREVIEW ========== */
+.project-card__preview-svg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, #f0ede7 100%);
+  padding: 24px;
+}
+.project-card__preview-svg svg {
+  max-width: 80%;
+  max-height: 80%;
+  width: auto;
+  height: auto;
+}

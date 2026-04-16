@@ -1,6 +1,6 @@
 // seed.js
 // ─────────────────────────────────────────────
-// Seeds the database with example killer web apps.
+// Seeds the database with example web apps.
 // Run: npm run seed
 // ─────────────────────────────────────────────
 
@@ -9,18 +9,6 @@ const { connectDB, mongoose } = require('./config/database');
 const App = require('./models/App');
 
 const seedApps = [
-  {
-    title: 'X and O',
-    slug: 'gaming',
-    description: 'Play x and o against the computer',
-    category: 'Gaming',
-    type: 'static',
-    tech: ['HTML', 'CSS', 'JS'],
-    pages: 1,
-    folder: 'x-and-o',
-    pattern: 'grid',
-    order: 1
-  },
   {
     title: 'Vector Designer',
     slug: 'designing',
@@ -31,7 +19,7 @@ const seedApps = [
     pages: 1,
     folder: 'vector-designer',
     pattern: 'grid',
-    order: 2
+    order: 1
   },
   {
     title: 'Kinematic Simulator',
@@ -43,7 +31,7 @@ const seedApps = [
     pages: 1,
     folder: 'kinematic-simulator',
     pattern: 'grid',
-    order: 3
+    order: 2
   },
   {
     title: 'Chess',
@@ -54,6 +42,18 @@ const seedApps = [
     tech: ['HTML', 'CSS', 'JS'],
     pages: 1,
     folder: 'chess',
+    pattern: 'grid',
+    order: 3
+  },
+  {
+    title: 'X and O',
+    slug: 'gaming',
+    description: 'Play x and o against the computer',
+    category: 'Gaming',
+    type: 'static',
+    tech: ['HTML', 'CSS', 'JS'],
+    pages: 1,
+    folder: 'x-and-o',
     pattern: 'grid',
     order: 4
   },

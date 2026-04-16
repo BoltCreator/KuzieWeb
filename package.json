@@ -1,7 +1,7 @@
 {
   "name": "kuzielum",
   "version": "1.0.0",
-  "description": "Kuzielum — Killer Web Apps showcase platform",
+  "description": "Kuzielum — Web Apps showcase platform",
   "main": "server.js",
   "scripts": {
     "start": "node seed.js && node server.js",

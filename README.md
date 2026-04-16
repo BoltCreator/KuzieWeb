@@ -1,4 +1,4 @@
-# Kuzielum — Killer Web Apps Platform
+# Kuzielum — Web Apps Platform
 
 A beautiful Express.js showcase platform for hosting and presenting static web apps and dynamic MongoDB-powered applications from a single codebase.
 

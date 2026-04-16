@@ -1,6 +1,6 @@
 // routes/api.js
 // ─────────────────────────────────────────────
-// REST API for managing killer web apps.
+// REST API for managing web apps.
 //
 //  GET    /api/apps          — List all apps
 //  GET    /api/apps/:slug    — Get single app
