@@ -36,7 +36,7 @@ const seedApps = [
   {
     title: 'Chess',
     slug: 'chess',
-    description: 'Play chess against n AI engine with various difficulty levels',
+    description: 'Play chess against an AI engine with various difficulty levels',
     category: 'Gaming',
     type: 'static',
     tech: ['HTML', 'CSS', 'JS'],
