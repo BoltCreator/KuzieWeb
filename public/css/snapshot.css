@@ -7,15 +7,16 @@
   background: var(--bg-elevated);
 }
 .project-card__preview-snapshot iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 1280px;
   height: 800px;
   border: none;
   pointer-events: none;
   transform-origin: top left;
-  transform: scale(0.3);
-  position: absolute;
-  top: 0;
-  left: 0;
+  /* Scale dynamically to fill container width */
+  transform: scale(var(--snapshot-scale, 0.35));
 }
 .project-card__preview-overlay {
   position: absolute;

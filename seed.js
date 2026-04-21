@@ -69,6 +69,7 @@ const seedApps = [
     pattern: 'grid',
     order: 5
   },
+  /*
   {
     title: 'Landing Page',
     slug: 'landing-page',
@@ -107,6 +108,7 @@ const seedApps = [
     pattern: 'diagonal',
     order: 8
   }
+  */
 ];
 
 // ── Export for auto-seed in server.js ──
