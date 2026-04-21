@@ -60,7 +60,7 @@ const seedApps = [
   {
     title: 'Game of Life',
     slug: 'sim',
-    description: 'Play x and o against the computer',
+    description: 'Cellular Automation Simulator',
     category: 'Gaming',
     type: 'static',
     tech: ['HTML', 'CSS', 'JS'],
