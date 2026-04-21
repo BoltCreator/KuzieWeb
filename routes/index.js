@@ -13,11 +13,11 @@ router.get('/', async (req, res) => {
     const apps = await App.find({ active: true }).sort({ order: 1, createdAt: -1 });
     res.render('index', {
       apps: apps.map(a => a.toObject()),
-      title: 'Kuzielum — Killer Web Apps'
+      title: 'Kuzielum —  A collection of web apps'
     });
   } catch (err) {
     console.error('Homepage error:', err.message);
-    res.render('index', { apps: [], title: 'Kuzielum — Killer Web Apps' });
+    res.render('index', { apps: [], title: 'Kuzielum —  A collection of web apps' });
   }
 });
 
