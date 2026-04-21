@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game of Life</title>
+<link href="https://fonts.googleapis.com/css2?family=Anybody:wght@400;600;800&family=Lexend:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #f4f1ec;
+  --surface: #ffffff;
+  --surface-alt: #eae7e1;
+  --border: #d4d0c8;
+  --text: #1a1a1a;
+  --text-dim: #7a756c;
+  --accent: #2d5a27;
+  --accent-light: #e8f0e6;
+  --accent-hover: #3d7a35;
+  --toolbar-bg: #ffffff;
+  --danger: #c0392b;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+html { font-family: 'Lexend', sans-serif; font-weight: 400; }
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 40px;
+  background-image:
+    radial-gradient(circle at 20% 80%, rgba(45,90,39,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(45,90,39,0.03) 0%, transparent 40%);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 28px;
+  animation: fadeDown 0.5s ease-out;
+}
+.header h1 {
+  font-family: 'Anybody', sans-serif;
+  font-weight: 800;
+  font-size: 36px;
+  letter-spacing: -1px;
+  color: var(--text);
+  line-height: 1.1;
+}
+.header h1 span { color: var(--accent); }
+.header .subtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  font-weight: 300;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  animation: fadeUp 0.5s ease-out 0.1s both;
+}
+
+.toolbar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--toolbar-bg);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 10;
+}
+.playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tool-btn {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.tool-btn:hover {
+  background: var(--surface-alt);
+  border-color: #bbb8b0;
+  box-shadow: var(--shadow-sm);
+}
+.tool-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+#play {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(45,90,39,0.25);
+}
+#play:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 4px 12px rgba(45,90,39,0.3);
+}
+#play svg { fill: white; }
+
+.danger-btn { color: var(--danger) !important; }
+.danger-btn svg { fill: var(--danger) !important; }
+
+.template-wrap { position: relative; }
+.template-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 30px 8px 14px;
+  font-size: 13px;
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+  position: relative;
+}
+.template-btn .arrow {
+  position: absolute;
+  right: 10px;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.template-btn:hover {
+  background: var(--surface-alt);
+  border-color: #bbb8b0;
+}
+.template-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 170px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  z-index: 200;
+  box-shadow: var(--shadow-lg);
+}
+.template-dropdown.open { display: block; }
+.template-dropdown div {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: 'Lexend', sans-serif;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.12s, color 0.12s;
+}
+.template-dropdown div:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+#game {
+  display: block;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+
+.toolbar-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--toolbar-bg);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow-md);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.drawing-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tool-separator {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 6px;
+}
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.slider-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.slider-box .slider-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  white-space: nowrap;
+}
+.slider-box input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 80px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+.slider-box input[type="range"]:hover { background: #b8b4ab; }
+.slider-box input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.slider-box input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.footer {
+  margin-top: 24px;
+  text-align: center;
+  animation: fadeUp 0.5s ease-out 0.3s both;
+}
+.footer p {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 300;
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 560px) {
+  .header h1 { font-size: 28px; }
+  .toolbar-bottom { flex-direction: column; align-items: flex-start; }
+  .slider-group { width: 100%; justify-content: space-between; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Game of <span>Life</span></h1>
+  <div class="subtitle">Cellular Automaton Simulator</div>
+</div>
+
+<div class="app-container">
+  <div class="toolbar-top">
+    <div class="playback-controls">
+      <button id="play" class="tool-btn" onclick="toggleplay()" title="Play / Pause">
+        <svg viewBox="0 0 448 512"><polygon points="96,64 416,256 96,448"/></svg>
+      </button>
+      <div id="time">
+        <button id="forward" class="tool-btn" onclick="step()" title="Step Forward">
+          <svg viewBox="0 0 512 512"><path d="M52 88l156 168L52 424V88zm196 0l156 168-156 168V88zm160-24v384h48V64h-48z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="template-wrap">
+      <button id="tempbtn" class="template-btn" onclick="tempdrop()"><span id="tempLabel">Glider</span><span class="arrow">&#9662;</span></button>
+      <div id="tempdown" class="template-dropdown"></div>
+    </div>
+  </div>
+
+  <canvas id="game" width="540" height="500"></canvas>
+
+  <div class="toolbar-bottom">
+    <div class="drawing-tools">
+      <button title="Click" id="point" class="tool-btn" onclick="point()">
+        <svg viewBox="0 0 320 512"><path d="M0 55.2V426c0 12.2 9.9 22 22 22 6.3 0 12-2.6 16.2-6.8l81-81.1 49.6 114.2c3.2 7.3 11.6 10.7 18.9 7.5l39.2-17.1c7.3-3.2 10.7-11.6 7.5-18.9l-49.6-114.2h114.3c12.2 0 22-9.9 22-22 0-6.3-2.6-12-6.8-16.2L22 6.8C17.8 2.6 12.2 0 5.8 0-2.6 0-12.5 9.9 0 22v33.2z"/></svg>
+      </button>
+      <button title="Draw" id="pen" class="tool-btn" onclick="pen()">
+        <svg viewBox="0 0 512 512"><path d="M497 56L456 16c-21-21-55-21-76 0L75 321l-43 128c-4 13 8 25 21 21l128-43L486 122c21-21 21-55 11-66zM160 368l-64 22 22-64L352 92l42 42L160 368z"/></svg>
+      </button>
+      <button title="Stamp Template" id="hand" class="tool-btn" onclick="hand()">
+        <svg viewBox="0 0 24 24"><path d="M12 3C10.34 3 9 4.34 9 6v4.26C7.19 11.12 6 13.12 6 15.5V17h12v-1.5c0-2.38-1.19-4.38-3-5.24V6c0-1.66-1.34-3-3-3zM5 19v2h14v-2H5z"/></svg>
+      </button>
+      <button title="Eraser" id="eraser" class="tool-btn" onclick="eraser()">
+        <svg viewBox="0 0 512 512"><path d="M497.941 273.941c18.745-18.745 18.745-49.137 0-67.882l-160-160c-18.745-18.745-49.136-18.745-67.882 0L12.903 303.216c-18.745 18.745-18.745 49.137 0 67.882l100.059 100.059A47.99 47.99 0 0 0 146.902 484H480c17.673 0 32-14.327 32-32s-14.327-32-32-32H275.917l222.024-146.059zM220.118 146.059L336 30.177l160 160-115.882 115.882-160-160zM80 416l-34.059-34.059 115.882-115.882 160 160L256 492H146.902L80 416z"/></svg>
+      </button>
+      <div class="tool-separator"></div>
+      <button title="Clear All" class="tool-btn danger-btn" onclick="clean()">
+        <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM8 9h8v10H8V9zm7.5-5l-1-1h-5l-1 1H5v2h14V4h-3.5z"/></svg>
+      </button>
+      <button title="Save Template" class="tool-btn" onclick="save()">
+        <svg viewBox="0 0 448 512"><path d="M433.941 129.941l-83.882-83.882A48 48 0 0 0 316.118 32H48C21.49 32 0 53.49 0 80v352c0 26.51 21.49 48 48 48h352c26.51 0 48-21.49 48-48V163.882a48 48 0 0 0-14.059-33.941zM224 416c-35.346 0-64-28.654-64-64 0-35.346 28.654-64 64-64s64 28.654 64 64c0 35.346-28.654 64-64 64zm96-304.52V212c0 6.627-5.373 12-12 12H76c-6.627 0-12-5.373-12-12V76c0-6.627 5.373-12 12-12h228.52c3.183 0 6.235 1.264 8.485 3.515l3.48 3.48A12 12 0 0 1 320 79.48V111.48z"/></svg>
+      </button>
+    </div>
+    <div class="slider-group">
+      <div class="slider-box">
+        <span class="slider-label">Size</span>
+        <input id="size" type="range" min="5" max="18" value="8" oninput="setsize()">
+      </div>
+      <div class="slider-box">
+        <span class="slider-label">Speed</span>
+        <input id="speed" type="range" min="0" max="5" value="3" oninput="setspeed()">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>Conway's Game of Life — Click cells to place, press play to simulate</p>
+</div>
+
+<script>
+// ── SVG icon strings for dynamic insertion ──
+var ICON_PLAY = '<svg viewBox="0 0 448 512"><polygon points="96,64 416,256 96,448"/></svg>';
+var ICON_PAUSE = '<svg viewBox="0 0 448 512"><rect x="80" y="64" width="100" height="384"/><rect x="268" y="64" width="100" height="384"/></svg>';
+
+// ══════════════════════════════════════════════════════════════
+// ORIGINAL GAME LOGIC — EXACT COPY FROM SOURCE
+// ══════════════════════════════════════════════════════════════
+
+var can;
+var size=70;
+var maxtime =2;
+var timecount=0;
+var xsize = size;
+var ysize = size;
+var startx=0;
+var starty=0;
+var width=0;
+var height=0;
+var cellsize=0;
+var canvas;
+var ps = 9;
+var pointer = null;
+var bcolor = "#2d5a27";
+var cursor = "point";
+var dragging = false;
+var scount = 0;
+var mousepos = [0,0];
+var saveshape = [[1,1,1],
+				[1,0,0],
+				[0,1,0]];
+var store = new Object();
+store["Glider"] = [[1,1,1],
+				[1,0,0],
+				[0,1,0]];
+store["10 row"]= [[1,1,1,1,1,1,1,1,1,1]];
+store["tiny exploder"] = [[0,1,0],
+						[1,1,1],
+						[1,0,1],
+						[0,1,0]];
+store["exploder"] = [[1,0,1,0,1],
+					[1,0,0,0,1],
+					[1,0,0,0,1],
+					[1,0,0,0,1],
+					[1,0,1,0,1]];
+store["spaceship"] = [[0,1,1,1,1],
+						[1,0,0,0,1],
+						[0,0,0,0,1],
+						[1,0,0,1,0]]
+var positions=[];
+var STATES = {
+  creating: 1,
+  playing: 2,
+  pause: 3,
+};
+var state= STATES.creating;
+
+function setup() {
+	canvas = document.getElementById('game');
+	if(canvas.getContext){
+		can = canvas.getContext('2d');
+		startx=canvas.offsetLeft;
+		starty=canvas.offsetTop;
+		width=canvas.width;
+		height=canvas.height;
+		
+		cellsize=width/size;
+		resetScreen();
+	}
+	else{
+		alert("Your browser doesn't support canvas consider changing your browser")
+	}
+	resetPos();
+	canvas.addEventListener('mouseup', function(event){
+		dragging = false;
+	},false);
+	canvas.addEventListener('mousemove', function(event){
+		var rect = canvas.getBoundingClientRect();
+		var scaleX = canvas.width / rect.width;
+		var scaleY = canvas.height / rect.height;
+		var x = (event.clientX - rect.left) * scaleX;
+		var y = (event.clientY - rect.top) * scaleY;
+		mousepos = [x,y];
+		if((cursor=="pen" || cursor == "eraser") && dragging){
+			drawclick(x,y);
+		}
+	},false);
+	canvas.addEventListener('mousedown', function(event) {
+		var rect = canvas.getBoundingClientRect();
+		var scaleX = canvas.width / rect.width;
+		var scaleY = canvas.height / rect.height;
+		var x = (event.clientX - rect.left) * scaleX;
+		var y = (event.clientY - rect.top) * scaleY;
+		if(cursor=="point"){
+			drawclick(x,y);
+		}
+		if(cursor=="hand"){
+			addat();
+		}
+		dragging = true;
+	}, false);
+	for(var k in store){
+		adddiv("tempdown",k);
+	}
+	point();
+	backcolor();
+
+	document.addEventListener('click', function(e){
+		if(!e.target.closest('#tempbtn') && !e.target.closest('#tempdown')){
+			document.getElementById('tempdown').classList.remove('open');
+		}
+	});
+
+	setInterval(gameloop, 60); 
+}
+
+function adddiv(par,ch){
+	var np = document.getElementById(par);
+	var car = document.createElement('div');
+	car.innerHTML = ch;
+	np.appendChild(car);
+	if(true){
+	car.addEventListener('click', function(){
+		uptemp(ch);
+	}, false);
+	}
+}
+function uptemp(ch){
+	var el = document.getElementById("tempdown");
+	var bt = document.getElementById("tempLabel");
+	el.classList.remove('open');
+	bt.innerHTML = ch;
+	saveshape = store[ch];
+}
+function tempdrop(){
+	var el = document.getElementById("tempdown");
+	el.classList.toggle('open');
+}
+function play(){
+	state=STATES.playing;
+}
+function resetPos(oldpos=[]){
+	var xsize = canvas.width/ps;
+	var ysize = canvas.height/ps;
+	positions=[];
+	for(var x=0;x<xsize;x++){
+		positions.push([]);
+		for(var y=0;y<ysize;y++){
+			positions[positions.length-1].push(0);
+		}
+	}
+}
+function transfer(oldpos){
+	var v = 0;
+	for(var x=0;x<positions.length;x++){
+		for(var y=0;y<positions[x].length;y++){
+			if(x<oldpos.length){
+				if(y<oldpos[x].length){
+					positions[x][y]=oldpos[x][y];
+				}
+			}	
+		}
+	}
+}
+function drawat(s=saveshape){
+	var cx = s.length/2;
+	var cy = s[0].length/2;
+	var sx = mousepos[0] - (cx*ps);
+	var sy = mousepos[1] - (cy*ps);
+	for(var x=0;x<s.length;x++){
+		for(var y=0;y<s[x].length;y++){
+			var nx = sx + (x*ps);
+			var ny = sy + (y*ps);
+			if(s[x][y]!=0){
+				drawcell(nx,ny);
+			}
+		}
+	}
+}
+function addat(s=saveshape){
+	var cx = s.length/2;
+	var cy = s[0].length/2;
+	var sx = mousepos[0] - (cx*ps);
+	var sy = mousepos[1] - (cy*ps);
+	for(var x=0;x<s.length;x++){
+		for(var y=0;y<s[x].length;y++){
+			var nx = sx + (x*ps);
+			var ny = sy + (y*ps);
+			if(s[x][y]!=0){
+				drawclick(nx,ny);
+			}
+		}
+	}
+}
+function display(text){
+	can.font = "70px Arial";
+	can.fillStyle="#4af441";
+	can.textAlign = "center";
+	can.fillText(text,width/2,height/2);
+}
+function setsize(){
+	var v = document.getElementById("size").value;
+	ps = parseFloat(v);
+	var op= positions.slice(0);
+	resetPos();
+	transfer(op);
+	drawall(true);
+}
+function setspeed(){
+	var v = document.getElementById("speed").value;
+	var ps = parseFloat(v);
+	maxtime = 5 - ps;
+}
+function toggleplay(){
+	if(state != STATES.playing){
+		state = STATES.playing;
+		showpause();
+	}
+	else{
+		state=STATES.creating;
+		showplay();
+	}
+}
+function pen(){
+	changepoint("pen");
+	cursor = "pen";
+	canvas.style.cursor = "default";
+}
+function point(){
+	changepoint("point");
+	cursor = "point";
+	canvas.style.cursor = "default";
+}
+function hand(){
+	changepoint("hand");
+	cursor = "hand";
+	canvas.style.cursor = "none";
+}
+function eraser(){
+	changepoint("eraser");
+	cursor = "eraser";
+}
+function changepoint(id){
+	if(pointer!=null){
+		pointer.style.backgroundColor = "";
+		pointer.style.borderColor ="";
+		pointer.style.color = "";
+	}
+	var v = document.getElementById(id);
+	v.style.backgroundColor = bcolor;
+	v.style.borderColor = bcolor;
+	v.style.color = "#ffffff";
+	pointer = v;
+}
+function showplay(){
+	var v = document.getElementById("play");
+	v.innerHTML = ICON_PLAY;
+	var n = document.getElementById("forward");
+	n.style.display = "inline-flex";
+}
+function showpause(){
+	var v = document.getElementById("play");
+	v.innerHTML = ICON_PAUSE;
+	var n = document.getElementById("forward");
+	n.style.display = "none";
+}
+function step(){
+	var st = state;
+	state = STATES.playing;
+	drawall();
+	state = st;
+}
+function drawall(pl=false){
+	if(state==STATES.playing){
+		can.clearRect(0,0,width,height);
+		backcolor();
+		newpos=[];
+		for(var x=0;x<positions.length;x++){
+			newpos.push([]);
+			for(var y=0;y<positions[x].length;y++){
+				var count=getCount([x,y]);
+				var ans=0;
+				if(positions[x][y]==1){
+					if(count==2 || count==3){
+						ans=1;
+						drawtocell(x,y);
+					
+					}
+					else{
+					}
+				}
+				else{
+					if(count==3){
+						ans=1;
+						drawtocell(x,y);
+					}
+				}
+				newpos[newpos.length-1].push(ans);
+			}
+		}
+		positions=newpos;
+	}
+	else if(cursor=="hand" || pl){
+		can.clearRect(0,0,width,height);
+		backcolor();
+		for(var x=0;x<positions.length;x++){
+			for(var y=0;y<positions[x].length;y++){
+				if(positions[x][y] == 1){
+					drawtocell(x,y);
+				}
+			}
+		}
+	}
+	if(cursor=="hand"){
+		drawat();
+	}
+}
+function gameloop(){
+	timecount++;
+	if(timecount<maxtime){
+		return null;
+	}
+	timecount = 0;
+	drawall();
+	
+}
+function check(x,y){
+	if(x<0){
+		x = positions.length-1;
+	}
+	if(x>positions.length-1){
+		x=0;
+	}
+	if(y<0){
+		y = positions[0].length-1;
+	}
+	if(y>positions[0].length-1){
+		y=0;
+	}
+	if(positions[x][y] == 1){
+		return true;
+	}
+	return false;
+}
+function getCount(c){
+	var num=0;
+	var x=c[0];
+	var y=c[1];
+	var xsize = positions.length;
+	var ysize = positions[0].length;
+	if(true || (x<(positions.length-1) && x>0 && y<(positions[0].length-1) && y>0)){
+		if(check([x-1],[y-1])){
+			num+=1;
+		}
+		if(check([x],[y-1])){
+			num+=1;
+		}
+		if(check([x+1],[y-1])){
+			num+=1;
+		}
+		if(check([x-1],[y])){
+			num+=1;
+		}
+		if(check([x+1],[y])){
+			num+=1;
+		}
+		if(check([x-1],[y+1])){
+			num+=1;
+		}
+		if(check([x],[y+1])){
+			num+=1;
+		}
+		if(check([x+1],[y+1])){
+			num+=1;
+		}
+	}
+	return num;
+	
+}
+function clean(){
+	for(var x=0;x<positions.length;x++){
+		for(var y=0;y<positions[x].length;y++){
+			positions[x][y]=0;
+		}
+	}
+	drawall(true);
+}
+function save(){
+	var xs = null;
+	var xe = null;
+	var ys = null;
+	var ye = null;
+	for(var x=0;x<positions.length;x++){
+		for(var y=0;y<positions[x].length;y++){
+			if(positions[x][y]==1){
+			if(xs==null || xs>x){
+				xs=x;
+			}
+			if(xe==null || xe<x){
+				xe=x;
+			}
+			if(ys==null || ys>y){
+				ys=y;
+			}
+			if(ye==null || ye<y){
+				ye=y;
+			}				
+			}
+			
+		}
+	}
+	if(xs==null || xe==null || ys==null || ye==null){
+		return null;
+	}
+	var ans = [];
+	for(var x = xs;x<=xe;x++){
+		var ls = [];
+		for(var y=ys;y<=ye;y++){
+			ls.push(positions[x][y]);
+		}
+		ans.push(ls);
+	}
+	scount++;
+	var name = "save"+scount;
+	store[name]=ans;
+	adddiv("tempdown",name);
+}
+function resetScreen(){
+	var xsize = canvas.width/ps;
+	var ysize = canvas.height/ps;
+	positions=[];
+	for(var a=0;a<xsize;a++){
+			positions.push([]);
+			for(var b=0;b<ysize;b++){
+				positions[a].push(0);
+			}
+		}
+	clearScreen();
+	playing=true;
+}
+function clearScreen(){
+	resetPos();
+	can.clearRect(0,0,width,height);
+}
+function drawclick(x,y){
+	if(state!= STATES.creating){
+		state = STATES.creating;
+		showplay();
+	}
+	ax=width/size;
+	ay=height/size;
+	var ax = ps;
+	var ay = ps;
+	intx=Math.floor(x/ax);
+	inty=Math.floor(y/ay);
+	X=(intx*ax)+(ax/2);
+	Y=(inty*ay)+(ay/2);
+	if(intx>=positions.length || inty>=positions[0].length){
+		return null;
+	}
+	if(intx<0 || inty<0){
+		return null;
+	}
+	positions[intx][inty]=1;
+	if(cursor == "eraser"){
+		positions[intx][inty]=0;
+		drawall(true);
+	}
+	else{
+		drawcell(X,Y);
+	}
+	
+	
+}
+function drawtocell(intx,inty){
+	ax=width/size;
+	ay=height/size;
+	var ax = ps;
+	var ay = ps;
+	X=(intx*ax)+(ax/2);
+	Y=(inty*ay)+(ay/2);
+	drawcell(X,Y);
+}
+function drawcell(x,y){
+	var ax = ps;
+	var ay = ps;
+	sx=x-(ax/2);
+	sy=y-(ay/2);
+	Rect(sx,sy,ax,ay);
+}
+function backcolor(){
+	var step = ps;
+	var xpos = 0;
+	var ypos = 0;
+	var size = canvas.width/ps;
+	for(var x=0;x<canvas.width;x+=step){
+		for(var y=0;y<canvas.height;y+=step){
+			Rect(x,y,step,step,"#d8d4cc");
+		}
+	}
+}
+function drawgrid(){
+	can.strokeStyle = "black";
+	can.lineWidth=2;
+	var xstep = width/(size);
+	var ystep = height/(size);
+	var xstep = ps;
+	var ystep = ps;
+	var xpos = xstep;
+	var ypos = ystep;
+	
+	for(var i =0;i<size-1;i++){
+		Line(xpos,0,xpos,height);
+		Line(0,ypos,width,ypos);
+		xpos+=xstep;
+		ypos+=ystep;
+	}
+}
+function Coords(event){
+	alert("x "+event.offsetX+" y "+event.offsetY);
+}
+function Rect(x,y,width,height,c="black"){
+	var ins = 1.1;
+	width = width/ins;
+	height = height/ins;
+	can.fillStyle = c;
+	can.beginPath();
+	can.fillRect(x,y,width,height);
+	can.closePath();
+}
+function Line(x1,y1,x2,y2){
+	can.beginPath();
+	can.moveTo(x1,y1);
+	can.lineTo(x2,y2);
+	can.stroke();
+	can.closePath();
+}
+
+window.onload = setup;
+</script>
+</body>
+</html>

@@ -58,6 +58,18 @@ const seedApps = [
     order: 4
   },
   {
+    title: 'Game of Life',
+    slug: 'sim',
+    description: 'Play x and o against the computer',
+    category: 'Gaming',
+    type: 'static',
+    tech: ['HTML', 'CSS', 'JS'],
+    pages: 1,
+    folder: 'game-of-life',
+    pattern: 'grid',
+    order: 5
+  },
+  {
     title: 'Landing Page',
     slug: 'landing-page',
     description: 'A conversion-focused landing page with smooth scroll animations and a bold visual identity.',
@@ -67,7 +79,7 @@ const seedApps = [
     pages: 1,
     folder: 'landing-page',
     pattern: 'dots',
-    order: 5
+    order: 6
   },
   {
     title: 'Interactive Quiz',
@@ -79,7 +91,7 @@ const seedApps = [
     pages: 3,
     folder: 'interactive-quiz',
     pattern: 'circles',
-    order: 6
+    order: 7
   },
   {
     title: 'Notes App',
@@ -93,7 +105,7 @@ const seedApps = [
     entryFile: 'index.js',
     usesDatabase: true,
     pattern: 'diagonal',
-    order: 7
+    order: 8
   }
 ];
 
