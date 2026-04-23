@@ -323,6 +323,9 @@ canvas#game {
   height: auto;
   /* Background should never be visible — squares cover entire canvas */
   background: #1e1e22;
+  /* Prevent browser zoom/scroll gestures on the board */
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 /* ── Coordinates ──────────────────────────────────────────────────── */
@@ -650,9 +653,18 @@ canvas#game {
   }
 
   .game-layout {
-    padding: 8px;
-    gap: 8px;
+    padding: 6px;
+    gap: 6px;
   }
+
+  /* On mobile: board first, then controls below */
+  .game-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-left { order: 2; }
+  .board-wrapper { order: 1; }
+  .panel-right { order: 3; }
 
   /* Panels flow as wrapped card rows */
   .panel {
@@ -667,18 +679,21 @@ canvas#game {
     margin-bottom: 8px;
   }
 
+  /* Larger touch targets */
   .btn {
-    padding: 8px 10px;
-    font-size: 0.82rem;
+    padding: 12px 10px;
+    font-size: 0.88rem;
     gap: 5px;
+    min-height: 44px;
   }
   .btn-row .btn {
     min-width: 60px;
   }
 
   .btn-diff {
-    padding: 7px 4px;
-    font-size: 0.78rem;
+    padding: 12px 4px;
+    font-size: 0.82rem;
+    min-height: 44px;
   }
 
   .meta-text {
@@ -690,15 +705,20 @@ canvas#game {
     max-width: 100%;
   }
   :root {
-    --coord-size: 20px;
+    --coord-size: 18px;
   }
   .coord-row, .coord-col {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
+  }
+
+  /* Prevent canvas from being too tiny on very small screens */
+  .canvas-frame {
+    width: 100%;
   }
 
   .turn-bar {
     padding: 6px 14px;
-    margin-top: 8px;
+    margin-top: 6px;
   }
   .turn-label {
     font-size: 0.82rem;
@@ -709,23 +729,85 @@ canvas#game {
     display: none;
   }
   .move-list {
-    max-height: 120px;
+    max-height: 100px;
   }
   .move-row {
     font-size: 0.78rem;
     padding: 4px 5px;
   }
 
+  /* Captured section: collapse to compact */
+  .captured-section .panel-heading {
+    margin-bottom: 4px;
+  }
   .captured-piece {
     font-size: 1rem;
+  }
+
+  /* Engine info: compact */
+  .engine-info {
+    flex: 1 1 100px;
   }
 
   .stat-label { font-size: 0.8rem; }
   .stat-value { font-size: 0.82rem; }
 
+  /* Board controls bar — bigger tap targets */
+  .board-controls-bar {
+    padding: 6px 8px;
+  }
+  .bcb-nav .btn-nav {
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    min-height: 40px;
+    min-width: 40px;
+  }
+
   .site-footer {
     font-size: 0.75rem;
     padding: 10px 12px;
+  }
+}
+
+/* ── Very small screens (< 380px) — e.g. iPhone SE ──────────────── */
+@media (max-width: 379px) {
+  .site-header {
+    padding: 8px 8px;
+  }
+  .site-title {
+    font-size: 1.1rem;
+  }
+  .site-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .game-layout {
+    padding: 4px;
+    gap: 4px;
+  }
+
+  :root {
+    --coord-size: 14px;
+  }
+  .coord-row, .coord-col {
+    font-size: 0.55rem;
+  }
+
+  .panel-section {
+    padding: 8px 10px;
+  }
+
+  .btn {
+    padding: 10px 8px;
+    font-size: 0.8rem;
+  }
+  .btn-diff {
+    padding: 10px 3px;
+    font-size: 0.76rem;
+  }
+
+  .move-list {
+    max-height: 80px;
   }
 }
 

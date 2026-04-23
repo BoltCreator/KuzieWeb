@@ -276,7 +276,7 @@ function setup() {
   canvasWidth = canvas.width;
   canvasHeight = canvas.height;
 
-  // Mouse events — scale from CSS size to canvas internal size
+  // Mouse/touch events — scale from CSS size to canvas internal size
   function canvasCoords(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -286,6 +286,128 @@ function setup() {
       (e.clientY - rect.top) * scaleY,
     ];
   }
+
+  function touchCoords(touch) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return [
+      (touch.clientX - rect.left) * scaleX,
+      (touch.clientY - rect.top) * scaleY,
+    ];
+  }
+
+  // ── Tap-to-move state ──────────────────────────────────────────────
+  // On mobile, tapping a piece selects it (shows legal moves).
+  // Tapping a highlighted square completes the move.
+  let selectedSquare = null;  // the square whose piece is selected for tap-to-move
+
+  function handleTapToMove(pos) {
+    if (board.pendingPromotion) {
+      board.handlePromoClick(pos);
+      board.mouse = [...pos];
+      if (!board.pendingPromotion) {
+        const prevTurn = board.turn;
+        // promotion was handled inside handlePromoClick which calls makeMove
+        // check if turn changed (it should have)
+      }
+      return true;
+    }
+
+    const sq = board.clickToSquare(pos);
+    if (!sq) { clearTapSelection(); return false; }
+
+    // If a square is already selected and this tap is on a legal-move square
+    if (selectedSquare && sq.selected) {
+      // Execute the move
+      const from = board.pixelToIndex(selectedSquare.getMid());
+      const to = board.pixelToIndex(sq.getMid());
+      const absP = Math.abs(selectedSquare.piece ? selectedSquare.piece.index : 0);
+
+      // Check for pawn promotion
+      const pieceOnFrom = board.moveGen.grid[from[1]][from[0]];
+      const absPiece = Math.abs(pieceOnFrom);
+      const isPromo = absPiece === 1 && (to[1] === 0 || to[1] === 7);
+
+      if (isPromo) {
+        // Find the piece on the from square
+        const piece = selectedSquare.piece;
+        if (piece) {
+          board.pendingPromotion = {
+            from, to,
+            sign: piece.index > 0 ? 1 : -1,
+            sq, piece,
+            originSq: selectedSquare,
+          };
+          // Move piece visually
+          const idx = board.pieces.indexOf(piece);
+          if (idx !== -1) board.pieces.splice(idx, 1);
+          if (sq.piece) {
+            const ci = board.pieces.indexOf(sq.piece);
+            if (ci !== -1) board.pieces.splice(ci, 1);
+          }
+          piece.updateMid(sq.getMid());
+          board.pieces.push(piece);
+          board.mouse = [...pos];
+        }
+        clearTapSelection();
+        return true;
+      }
+
+      board.moveGen.makeMove(from, to);
+      board.clearFocus();
+      sq.focused = true;
+      selectedSquare.focused = true;
+
+      if (sq.piece) {
+        const idx = board.pieces.indexOf(sq.piece);
+        if (idx !== -1) board.pieces.splice(idx, 1);
+      }
+
+      // Move the piece visually
+      const piece = selectedSquare.piece;
+      if (piece) {
+        piece.updateMid(sq.getMid());
+        board.handleCastling(piece, sq);
+        piece.sq = sq;
+        sq.piece = piece;
+      }
+
+      board.turn++;
+      board.syncFromGrid(board.moveGen.getGrid());
+      board.turn = board.moveGen.turn;
+
+      clearTapSelection();
+      return true; // move was made
+    }
+
+    // If tapping own piece, select it
+    if (sq.piece) {
+      const isWhitePiece = sq.piece.index > 0;
+      const isWhiteTurn = board.turn % 2 === 0;
+      if (isWhitePiece === isWhiteTurn) {
+        clearTapSelection();
+        board.clearSelection();
+        board.showLegalMoves(sq);
+        sq.focused = true;
+        selectedSquare = sq;
+        return true;
+      }
+    }
+
+    // Tapping empty/opponent square with no selection — clear
+    clearTapSelection();
+    return false;
+  }
+
+  function clearTapSelection() {
+    if (selectedSquare) {
+      selectedSquare = null;
+    }
+    board.clearSelection();
+  }
+
+  // ── Mouse events ───────────────────────────────────────────────────
 
   canvas.addEventListener('mouseup', (e) => {
     if (reviewIndex !== null) return;
@@ -320,14 +442,84 @@ function setup() {
       board.currentPiece = null;
       board.clearSelection();
     }
-    if (board.premovePiece) {
-      board.premovePiece.updateMid(board.premoveOriginSq.getMid());
-      board.premoveOriginSq.piece = board.premovePiece;
-      board.premovePiece.sq = board.premoveOriginSq;
-      board.pieces.push(board.premovePiece);
-      board.premovePiece = null;
-      board.premoveOriginSq = null;
+  });
+
+  // ── Touch events (mobile) ─────────────────────────────────────────
+  let touchStartPos = null;
+  let isDragging = false;
+  const DRAG_THRESHOLD = 10; // pixels before a tap becomes a drag
+
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (reviewIndex !== null) return;
+    const touch = e.touches[0];
+    const pos = touchCoords(touch);
+    touchStartPos = pos;
+    isDragging = false;
+    [mouseX, mouseY] = pos;
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (reviewIndex !== null) return;
+    const touch = e.touches[0];
+    const pos = touchCoords(touch);
+
+    // Check if we've moved enough to start dragging
+    if (!isDragging && touchStartPos) {
+      const dx = pos[0] - touchStartPos[0];
+      const dy = pos[1] - touchStartPos[1];
+      if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+        isDragging = true;
+        // Start dragging — pick up piece
+        clearTapSelection();
+        const cursor = board.mouseDown(touchStartPos);
+      }
     }
+
+    if (isDragging) {
+      board.mouseMove(pos);
+    }
+    [mouseX, mouseY] = pos;
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    if (reviewIndex !== null) return;
+
+    const pos = [mouseX, mouseY];
+
+    if (isDragging) {
+      // Complete the drag-and-drop
+      const prevTurn = board.turn;
+      board.mouseUp(pos);
+      if (board.turn !== prevTurn) {
+        recordLastMove(true);
+      }
+      clearTapSelection();
+    } else {
+      // It was a tap — use tap-to-move
+      const prevTurn = board.turn;
+      const handled = handleTapToMove(pos);
+      if (board.turn !== prevTurn) {
+        recordLastMove(true);
+      }
+    }
+
+    touchStartPos = null;
+    isDragging = false;
+  }, { passive: false });
+
+  canvas.addEventListener('touchcancel', (e) => {
+    if (board.currentPiece) {
+      board.currentPiece.revert();
+      board.pieces.push(board.currentPiece);
+      board.currentPiece = null;
+      board.clearSelection();
+    }
+    touchStartPos = null;
+    isDragging = false;
+    clearTapSelection();
   });
 
   // Sound toggle button
@@ -596,22 +788,6 @@ function gameLoop() {
 
   const prevTurn = board.turn;
 
-  // ── Execute premoves first, before AI ─────────────────────────────
-  // If it's the player's turn and premoves are queued, execute immediately
-  if (board.premoves.length > 0 && !board.gameover && !board.pendingPromotion && reviewIndex === null) {
-    const isPlayerTurn =
-      (playerId === 0 && board.turn % 2 === 0) ||
-      (playerId === 1 && board.turn % 2 === 1);
-    if (isPlayerTurn) {
-      const executed = board.tryExecutePremove();
-      if (executed) {
-        recordLastMove(true);
-      }
-    }
-  }
-
-  const prevTurn2 = board.turn;
-
   // ── AI plays its turn ─────────────────────────────────────────────
   if (!board.pendingPromotion && playerId !== 3 && reviewIndex === null) {
     if (playerId === 0 && board.turn % 2 === 1) {
@@ -624,7 +800,7 @@ function gameLoop() {
   }
 
   // If AI moved, record it
-  if (board.turn !== prevTurn2) {
+  if (board.turn !== prevTurn) {
     recordLastMove(true);
     hasPlayed = true;
 
@@ -698,7 +874,6 @@ function undo() {
   if (board.gameover) return;
   if (reviewIndex !== null) return;
 
-  board.clearPremoves();
   if (playerId === 3) {
     board.undo();
     moveHistory.splice(-1, 1);
@@ -784,16 +959,7 @@ function playHard() {
   document.getElementById('searchInfo').textContent = 'Depth limit: 3 s';
 }
 
-function togglePremoves() {
-  board.premovesEnabled = !board.premovesEnabled;
-  const btn = document.getElementById('btnPremove');
-  if (btn) {
-    btn.classList.toggle('active', board.premovesEnabled);
-  }
-  if (!board.premovesEnabled) {
-    board.clearPremoves();
-  }
-}
+// (Premove functionality removed)
 
 // ═══════════════════════════════════════════════════════════════════════
 //  Move review / replay

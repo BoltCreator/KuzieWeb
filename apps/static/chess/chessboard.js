@@ -84,28 +84,6 @@ class Chessboard {
       return;
     }
 
-    // ── Premove drop ────────────────────────────────────────────────
-    if (this.premovePiece) {
-      const sq = this.clickToSquare(pos);
-      const fromCoord = this.pixelToIndex(this.premoveOriginSq.getMid());
-
-      if (sq && sq !== this.premoveOriginSq) {
-        const toCoord = this.pixelToIndex(sq.getMid());
-        // Don't premove to own piece square (same color)
-        this.premoves.push({ from: [...fromCoord], to: [...toCoord] });
-      }
-
-      // Revert piece visually back to its original square
-      this.premovePiece.updateMid(this.premoveOriginSq.getMid());
-      this.premoveOriginSq.piece = this.premovePiece;
-      this.premovePiece.sq = this.premoveOriginSq;
-      this.pieces.push(this.premovePiece);
-      this.premovePiece = null;
-      this.premoveOriginSq = null;
-      this.mouse = [...pos];
-      return;
-    }
-
     // ── Normal move ─────────────────────────────────────────────────
     if (this.currentPiece) {
       const sq = this.getDropSquare(this.currentPiece, pos);
@@ -137,9 +115,6 @@ class Chessboard {
           this.clearSelection();
           return;
         }
-
-        // Player is making a real move — clear premoves
-        this.premoves = [];
 
         this.moveGen.makeMove(from, to);
         this.clearFocus();
@@ -174,11 +149,10 @@ class Chessboard {
       this.mouse = [...pos];
       return 'pointer';
     }
-    const movingPiece = this.currentPiece || this.premovePiece;
-    if (movingPiece) {
+    if (this.currentPiece) {
       const dx = pos[0] - this.mouse[0];
       const dy = pos[1] - this.mouse[1];
-      movingPiece.move(dx, dy);
+      this.currentPiece.move(dx, dy);
       this.mouse = [...pos];
       return 'grabbing';
     }
@@ -196,8 +170,8 @@ class Chessboard {
     const isWhiteTurn = this.turn % 2 === 0;
     const isActiveTurnPiece = isWhitePiece === isWhiteTurn;
 
-    // Normal move: own piece on own turn with no premoves queued
-    if (isActiveTurnPiece && this.premoves.length === 0) {
+    // Normal move: own piece on own turn
+    if (isActiveTurnPiece) {
       this.clearSelection();
       this.showLegalMoves(sq);
       sq.focused = true;
@@ -207,36 +181,17 @@ class Chessboard {
       return 'grabbing';
     }
 
-    // Premove: pick up OWN piece for premove queuing
-    // This fires when: (a) premoves enabled and pieces already queued, OR
-    //                   (b) premoves enabled and it's not our turn
-    if (this.premovesEnabled && !this.gameover) {
-      // Only premove with pieces of OUR color (not opponent's)
-      // Determine player's color: if premoves are queued, we know our color from the queue
-      // Otherwise check: if it's our turn, our color matches isWhiteTurn;
-      // if not our turn, our color is the opposite of isWhiteTurn
-      const playerIsWhite = isActiveTurnPiece ? isWhiteTurn : !isWhiteTurn;
-      if (isWhitePiece === playerIsWhite) {
-        this.premovePiece = sq.piece;
-        this.premoveOriginSq = sq;
-        this.pieces.splice(this.pieces.indexOf(sq.piece), 1);
-        sq.piece = null;
-        return 'grabbing';
-      }
-    }
-
     return this.getCursorStyle(pos);
   }
 
   getCursorStyle(pos) {
     if (this.pendingPromotion) return 'pointer';
-    if (this.currentPiece || this.premovePiece) return 'grabbing';
+    if (this.currentPiece) return 'grabbing';
     const sq = this.clickToSquare(pos);
     if (sq?.piece) {
       const isWhitePiece = sq.piece.index > 0;
       const isWhiteTurn = this.turn % 2 === 0;
-      if (isWhitePiece === isWhiteTurn) return 'grab'; // own turn piece
-      if (this.premovesEnabled && !this.gameover) return 'grab'; // premove piece
+      if (isWhitePiece === isWhiteTurn) return 'grab';
     }
     return 'default';
   }
@@ -538,17 +493,11 @@ class Chessboard {
       sq.draw(ctx);
     }
 
-    // Draw premove highlights BEFORE pieces so pieces sit on top
-    this.drawPremoves(ctx);
-
     for (const p of this.pieces) {
       p.draw(ctx, false);
     }
     if (this.currentPiece) {
       this.currentPiece.draw(ctx, true);
-    }
-    if (this.premovePiece) {
-      this.premovePiece.draw(ctx, true);
     }
 
     if (this.pendingPromotion) {

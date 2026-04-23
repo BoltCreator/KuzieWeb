@@ -211,6 +211,8 @@ body {
 .board-wrap {
   position: relative;
   animation: fadeUp 0.5s ease-out 0.2s both;
+  max-width: 420px;
+  width: 100%;
 }
 #game {
   display: block;
@@ -222,6 +224,13 @@ body {
     0 16px 48px rgba(0,0,0,0.15);
   cursor: pointer;
   transition: box-shadow 0.3s;
+  max-width: 100%;
+  height: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 #game:hover {
   box-shadow:
@@ -319,11 +328,22 @@ body {
 }
 
 /* ── Responsive ── */
-@media (max-width: 600px) {
+@media (max-width: 500px) {
+  body { padding: 12px 10px 24px; justify-content: flex-start; }
+  .header { margin-bottom: 16px; }
   .header h1 { font-size: 32px; }
-  .controls { gap: 8px; }
-  .score-cell { padding: 12px 20px; min-width: 90px; }
+  .header p { font-size: 11px; }
+  .controls { gap: 8px; margin-bottom: 16px; }
+  .control-group { gap: 4px; }
+  .toggle-btn { padding: 8px 16px; font-size: 14px; }
+  .select-btn { padding: 8px 30px 8px 12px; font-size: 13px; min-width: 100px; }
+  .new-game-btn { padding: 8px 20px; font-size: 13px; }
+  .score-cell { padding: 12px 20px; min-width: 80px; }
   .score-cell .value { font-size: 26px; }
+  .score-cell .label { font-size: 9px; }
+  .status-bar { height: 32px; margin-top: 10px; }
+  .scoreboard { margin-top: 16px; }
+  .footer { margin-top: 16px; }
 }
 </style>
 </head>
@@ -733,10 +753,44 @@ function setup() {
 
   canvas.addEventListener('click', function(event) {
     var rect = canvas.getBoundingClientRect();
-    var x = event.clientX - rect.left;
-    var y = event.clientY - rect.top;
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var x = (event.clientX - rect.left) * scaleX;
+    var y = (event.clientY - rect.top) * scaleY;
     if(playing) drawclick(x, y);
   }, false);
+
+  // ── Touch support for mobile ──
+  canvas.addEventListener('touchstart', function(event) {
+    event.preventDefault();
+    var touch = event.touches[0];
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var x = (touch.clientX - rect.left) * scaleX;
+    var y = (touch.clientY - rect.top) * scaleY;
+    if(playing) drawclick(x, y);
+  }, {passive: false});
+
+  // ── Resize canvas to fit on small screens ──
+  function resizeCanvas(){
+    var wrap = document.querySelector('.board-wrap');
+    var maxW = wrap.clientWidth;
+    if(maxW < 420 && maxW > 0){
+      canvas.width = maxW;
+      canvas.height = maxW;
+      width = canvas.width;
+      height = canvas.height;
+      ideal = width/size;
+      if(height<width) ideal = height/size;
+      // Redraw current state
+      can.clearRect(0,0,width,height);
+      drawgrid();
+      redrawBoard(null, true);
+    }
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
 
   showx();
 
@@ -860,6 +914,9 @@ function gameloop(){
     }
   }
   controlScreen();
+  if(anime && anime.ison()){
+    anime.draw();
+  }
 }
 
 function comMove(x,y){
