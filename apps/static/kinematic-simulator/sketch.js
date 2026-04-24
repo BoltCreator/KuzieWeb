@@ -14,6 +14,9 @@ let activeTouches = [];
 let lastPinchDist = 0;
 let isTouchPanning = false;
 let touchStartedOnElement = false;
+let touchStartPos = [0, 0];    // screen coords at touch start
+let touchDragStarted = false;  // has finger moved past threshold?
+const TOUCH_DRAG_THRESHOLD = 10; // pixels before a tap becomes a drag
 
 function setup() {
   canvas = document.getElementById('game');
@@ -68,21 +71,24 @@ function handleTouchStart(e) {
   activeTouches = [...e.touches];
 
   if (e.touches.length === 1) {
-    // Single finger: interact with mechanism or pan
     const [mx, my] = touchCoords(e.touches[0]);
-    touchStartedOnElement = mech.mousedown([mx, my]);
+    touchStartPos = [e.touches[0].clientX, e.touches[0].clientY];
+    touchDragStarted = false;
+
+    // Test if we're hitting a mechanism element (but DON'T start dragging yet)
+    touchStartedOnElement = mech.testClick([mx, my]);
+
     if (!touchStartedOnElement) {
-      isTouchPanning = true;
-      panStartX = e.touches[0].clientX;
-      panStartY = e.touches[0].clientY;
+      // Empty space — will become pan once finger moves
+      isTouchPanning = false; // wait for threshold
     }
   } else if (e.touches.length === 2) {
-    // Two fingers: start pinch/pan
-    if (touchStartedOnElement) {
-      // Release mechanism interaction
+    // Two fingers: cancel any single-finger interaction, start pinch/pan
+    if (touchStartedOnElement && touchDragStarted) {
       mech.mouseup(touchCoords(e.touches[0]));
-      touchStartedOnElement = false;
     }
+    touchStartedOnElement = false;
+    touchDragStarted = false;
     isTouchPanning = true;
     lastPinchDist = pinchDistance(e.touches);
     const mid = pinchMidpoint(e.touches);
@@ -95,37 +101,56 @@ function handleTouchMove(e) {
   e.preventDefault();
   activeTouches = [...e.touches];
 
-  if (e.touches.length === 1 && !isTouchPanning && touchStartedOnElement) {
-    // Single finger dragging mechanism element
-    const [mx, my] = touchCoords(e.touches[0]);
-    mech.mousemove([mx, my]);
-  } else if (e.touches.length === 1 && isTouchPanning) {
-    // Single finger panning (on empty space)
-    const dx = e.touches[0].clientX - panStartX;
-    const dy = e.touches[0].clientY - panStartY;
-    mech.panX += dx; mech.panY += dy;
-    panStartX = e.touches[0].clientX;
-    panStartY = e.touches[0].clientY;
+  if (e.touches.length === 1) {
+    const cx = e.touches[0].clientX;
+    const cy = e.touches[0].clientY;
+    const dist = Math.hypot(cx - touchStartPos[0], cy - touchStartPos[1]);
+
+    if (!touchDragStarted && dist < TOUCH_DRAG_THRESHOLD) {
+      // Finger hasn't moved enough — ignore (prevents accidental drags)
+      return;
+    }
+
+    if (!touchDragStarted) {
+      // Threshold just crossed — commit to drag or pan
+      touchDragStarted = true;
+      if (touchStartedOnElement) {
+        // Now actually start the mechanism drag
+        const [mx, my] = touchCoords(e.touches[0]);
+        mech.mousedown([mx, my]);
+      } else {
+        // Start panning
+        isTouchPanning = true;
+        panStartX = cx;
+        panStartY = cy;
+      }
+      return; // consume this first move event
+    }
+
+    // Ongoing drag or pan
+    if (touchStartedOnElement && !isTouchPanning) {
+      const [mx, my] = touchCoords(e.touches[0]);
+      mech.mousemove([mx, my]);
+    } else if (isTouchPanning) {
+      mech.panX += cx - panStartX;
+      mech.panY += cy - panStartY;
+      panStartX = cx;
+      panStartY = cy;
+    }
   } else if (e.touches.length === 2) {
     // Pinch zoom + two-finger pan
     const dist = pinchDistance(e.touches);
     const mid = pinchMidpoint(e.touches);
-
-    // Pan
     mech.panX += mid[0] - panStartX;
     mech.panY += mid[1] - panStartY;
     panStartX = mid[0];
     panStartY = mid[1];
-
-    // Zoom
     if (lastPinchDist > 0) {
       const factor = dist / lastPinchDist;
       const oldS = mech.scale;
       const newS = clampScale(oldS * factor);
       const rect = canvas.getBoundingClientRect();
-      const cx = mid[0] - rect.left;
-      const cy = mid[1] - rect.top;
-      applyZoom(cx, cy, oldS, newS);
+      applyZoom(mid[0] - rect.left, mid[1] - rect.top, oldS, newS);
       gui.syncZoom();
     }
     lastPinchDist = dist;
@@ -134,20 +159,34 @@ function handleTouchMove(e) {
 
 function handleTouchEnd(e) {
   e.preventDefault();
+
   if (e.touches.length === 0) {
-    if (touchStartedOnElement) {
-      // Lift finger off mechanism element
+    if (touchStartedOnElement && !touchDragStarted) {
+      // Short tap on an element — select it (do the mousedown now, then immediately mouseup)
+      const [mx, my] = [touchStartPos[0] - canvas.getBoundingClientRect().left,
+                         touchStartPos[1] - canvas.getBoundingClientRect().top];
+      mech.mousedown([mx, my]);
+      mech.mouseup([mx, my]);
+    } else if (touchStartedOnElement && touchDragStarted) {
+      // Was dragging — release
       if (activeTouches.length > 0) {
         mech.mouseup(touchCoords(activeTouches[activeTouches.length - 1]));
+      } else {
+        mech.mouseup(touchStartPos);
       }
     }
+
+    // Reset all touch state
     isTouchPanning = false;
     touchStartedOnElement = false;
+    touchDragStarted = false;
     lastPinchDist = 0;
     activeTouches = [];
   } else if (e.touches.length === 1) {
-    // Went from 2 fingers to 1
+    // Went from 2 fingers to 1 — continue panning
     isTouchPanning = true;
+    touchStartedOnElement = false;
+    touchDragStarted = true;
     panStartX = e.touches[0].clientX;
     panStartY = e.touches[0].clientY;
     lastPinchDist = 0;

@@ -65,6 +65,24 @@ class Mechanism {
     this.mousep = p;
   }
 
+  /** Non-destructive hit test: returns true if p (screen coords) hits any element.
+   *  Does NOT start dragging or change any state. Used by touch to decide tap vs pan. */
+  testClick(p) {
+    const wp = this.toworld([p[0], p[1]]);
+    // Check joints (with inflated radius for touch)
+    const touchBonus = ('ontouchstart' in window) ? 15 : 0;
+    for (let i = this.joints.length - 1; i >= 0; i--) {
+      const myvec = this._myvec;
+      const pos = this.joints[i].getpoint();
+      if (myvec.length(pos, wp) <= this.joints[i].r + touchBonus) return true;
+    }
+    // Check links
+    for (let j = this.links.length - 1; j >= 0; j--) {
+      if (this.links[j].collide(wp)) return true;
+    }
+    return false;
+  }
+
   mousedown(p) {
     p = this.toworld(p);
     this.ismousedown = true;
@@ -154,8 +172,10 @@ class Mechanism {
   }
 
   _click(p) {
+    const touchBonus = ('ontouchstart' in window) ? 15 : 0;
     for (let i = this.joints.length - 1; i >= 0; i--) {
-      if (this.joints[i].collide(p)) {
+      const pos = this.joints[i].getpoint();
+      if (this._myvec.length(pos, p) <= this.joints[i].r + touchBonus) {
         this.isdragging = true;
         this.jpointer = this.joints[i];
         this.jpointer.selected = true;

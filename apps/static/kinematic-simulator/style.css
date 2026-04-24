@@ -22,7 +22,7 @@
 
 html,body { width:100%; height:100%; overflow:hidden;
   font:13px/1.4 var(--f); color:var(--t1); background:var(--bg-0);
-  -webkit-font-smoothing:antialiased; touch-action:none;
+  -webkit-font-smoothing:antialiased;
 }
 .hidden { display:none !important; }
 
@@ -131,7 +131,12 @@ body.sidebar-collapsed #bottombar { left:0; }
   transition:transform .25s ease;
 }
 
-.panel-scroll { flex:1; overflow-y:auto; padding:6px 8px; -webkit-overflow-scrolling:touch; }
+.panel-scroll {
+  flex:1; overflow-y:auto; padding:6px 8px;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;          /* allow vertical scroll by touch */
+  overscroll-behavior:contain;  /* don't scroll parent */
+}
 .panel-scroll::-webkit-scrollbar { width:3px; }
 .panel-scroll::-webkit-scrollbar-thumb { background:var(--bg-4); border-radius:2px; }
 
@@ -203,7 +208,7 @@ body.sidebar-collapsed #bottombar { left:0; }
   background:var(--t2); border:2px solid var(--bg-1); cursor:pointer;
 }
 
-.sidebar-footer { padding:8px; border-top:1px solid var(--border); }
+.clear-section { padding:8px 2px 16px; }
 .clear-btn {
   display:flex; align-items:center; justify-content:center; gap:6px;
   width:100%; padding:10px; background:none; border:1px solid var(--border);
@@ -219,7 +224,9 @@ body.sidebar-collapsed #bottombar { left:0; }
   background:var(--bg-1); border-left:1px solid var(--border);
   border-bottom:1px solid var(--border); border-radius:0 0 0 var(--r);
   box-shadow:-4px 4px 20px rgba(0,0,0,.35);
-  z-index:250; overflow:hidden; animation:slideIn .2s ease;
+  z-index:250; overflow:hidden; overflow-y:auto;
+  touch-action:pan-y; -webkit-overflow-scrolling:touch;
+  animation:slideIn .2s ease;
 }
 @keyframes slideIn { from{opacity:0;transform:translateX(10px)} to{opacity:1;transform:none} }
 .drawer-head {
@@ -324,12 +331,22 @@ button:focus:not(:focus-visible) { outline:none; }
 
   /* Sidebar slides in as overlay */
   #sidebar {
-    width:240px; top:var(--topbar-h);
+    width:260px; top:var(--topbar-h);
     height:calc(100vh - var(--topbar-h));
     transform:translateX(-100%);
     box-shadow:4px 0 20px rgba(0,0,0,.5);
+    z-index:250; /* above bottom bar on mobile */
   }
   #sidebar.open { transform:translateX(0); }
+
+  /* Ensure scroll area has safe bottom padding on mobile */
+  .panel-scroll {
+    padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .clear-section {
+    padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+  }
 
   /* Larger touch targets */
   .tool-btn { padding:12px 12px; font-size:14px; min-height:44px; }
