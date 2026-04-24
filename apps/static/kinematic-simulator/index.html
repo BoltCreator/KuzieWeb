@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Kinematic Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,15 +16,19 @@
   <!-- ═══ Top Bar ═══════════════════════════════════════ -->
   <header id="topbar">
     <div class="tb-left">
+      <!-- Hamburger (visible on mobile, or always as sidebar toggle) -->
+      <button class="icon-btn" id="btn-menu" aria-label="Toggle toolbar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <div class="brand">
-        <svg class="brand-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4M4.22 4.22l2.83 2.83m9.9 9.9l2.83 2.83M4.22 19.78l2.83-2.83m9.9-9.9l2.83-2.83"/></svg>
-        <span class="brand-text">Kinematic<b>Studio</b></span>
+        <svg class="brand-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4M4.22 4.22l2.83 2.83m9.9 9.9l2.83 2.83M4.22 19.78l2.83-2.83m9.9-9.9l2.83-2.83"/></svg>
+        <span class="brand-text hide-mobile">Kinematic<b>Studio</b></span>
       </div>
-      <div class="tb-sep"></div>
-      <button class="icon-btn" id="btn-save" data-tip="Save · Ctrl+S">
+      <div class="tb-sep hide-mobile"></div>
+      <button class="icon-btn hide-mobile" id="btn-save" data-tip="Save · Ctrl+S">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       </button>
-      <button class="icon-btn" id="btn-load" data-tip="Open · Ctrl+O">
+      <button class="icon-btn hide-mobile" id="btn-load" data-tip="Open · Ctrl+O">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
       </button>
     </div>
@@ -37,69 +41,58 @@
     </div>
 
     <div class="tb-right">
-      <label class="check-row" data-tip="Show grid">
+      <label class="check-row hide-mobile" data-tip="Toggle grid">
         <input type="checkbox" id="chk-grid" checked />
         <span class="check-label">Grid</span>
       </label>
-      <div class="tb-sep"></div>
+      <div class="tb-sep hide-mobile"></div>
       <button class="icon-btn" id="btn-settings" data-tip="Settings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1.08 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001.08 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1.08z"/></svg>
       </button>
     </div>
   </header>
 
-  <!-- ═══ Left Panel ════════════════════════════════════ -->
-  <aside id="sidebar">
+  <!-- ═══ Sidebar Overlay backdrop (mobile) ═════════════ -->
+  <div id="sidebar-backdrop" class="backdrop hidden"></div>
 
-    <!-- Tools -->
+  <!-- ═══ Left Panel / Sidebar ══════════════════════════ -->
+  <aside id="sidebar">
     <nav class="panel-scroll">
+
+      <!-- Mobile-only: Save/Load/Grid -->
+      <section class="panel-section show-mobile-only">
+        <div class="sec-label">File</div>
+        <button class="tool-btn" id="btn-save-m">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <span class="btn-label">Save</span>
+        </button>
+        <button class="tool-btn" id="btn-load-m">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          <span class="btn-label">Open</span>
+        </button>
+        <div class="prop-row">
+          <span class="prop-name">Grid</span>
+          <label class="switch"><input type="checkbox" id="chk-grid-m" checked /><span class="switch-track"></span></label>
+        </div>
+      </section>
+
       <section class="panel-section">
         <div class="sec-label">Tools</div>
-        <button class="tool-btn" data-tool="joint" data-tip="Place a pivot · J">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="3" x2="12" y2="7" stroke="currentColor" stroke-width="2"/><line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2"/><line x1="3" y1="12" x2="7" y2="12" stroke="currentColor" stroke-width="2"/><line x1="17" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2"/></svg>
-          <span class="btn-label">Joint</span><kbd>J</kbd>
-        </button>
-        <button class="tool-btn" data-tool="gear" data-tip="Place a gear · G">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M4.22 4.22l2.12 2.12m11.32 11.32l2.12 2.12M2 12h3m14 0h3M4.22 19.78l2.12-2.12m11.32-11.32l2.12-2.12"/></svg>
-          <span class="btn-label">Gear</span><kbd>G</kbd>
-        </button>
-        <button class="tool-btn" data-tool="link" data-tip="Link selected joints · L">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-          <span class="btn-label">Link</span><kbd>L</kbd>
-        </button>
-        <button class="tool-btn" data-tool="path" data-tip="Draw a slider path · P">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12" stroke-dasharray="2 3"/><circle cx="4" cy="12" r="2.5"/><circle cx="20" cy="12" r="2.5"/></svg>
-          <span class="btn-label">Path</span><kbd>P</kbd>
-        </button>
-        <button class="tool-btn" data-tool="join" data-tip="Attach joint to a path">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h8"/><circle cx="5" cy="12" r="3"/><circle cx="19" cy="12" r="3"/></svg>
-          <span class="btn-label">Join to Path</span>
-        </button>
-        <button class="tool-btn" data-tool="delete" data-tip="Delete selected · Del">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-          <span class="btn-label">Delete</span><kbd>⌫</kbd>
-        </button>
+        <button class="tool-btn" data-tool="joint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="3" x2="12" y2="7" stroke="currentColor" stroke-width="2"/><line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2"/><line x1="3" y1="12" x2="7" y2="12" stroke="currentColor" stroke-width="2"/><line x1="17" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2"/></svg><span class="btn-label">Joint</span><kbd class="hide-mobile">J</kbd></button>
+        <button class="tool-btn" data-tool="gear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M4.22 4.22l2.12 2.12m11.32 11.32l2.12 2.12M2 12h3m14 0h3M4.22 19.78l2.12-2.12m11.32-11.32l2.12-2.12"/></svg><span class="btn-label">Gear</span><kbd class="hide-mobile">G</kbd></button>
+        <button class="tool-btn" data-tool="link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg><span class="btn-label">Link</span><kbd class="hide-mobile">L</kbd></button>
+        <button class="tool-btn" data-tool="path"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12" stroke-dasharray="2 3"/><circle cx="4" cy="12" r="2.5"/><circle cx="20" cy="12" r="2.5"/></svg><span class="btn-label">Path</span><kbd class="hide-mobile">P</kbd></button>
+        <button class="tool-btn" data-tool="join"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h8"/><circle cx="5" cy="12" r="3"/><circle cx="19" cy="12" r="3"/></svg><span class="btn-label">Join to Path</span></button>
+        <button class="tool-btn" data-tool="delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg><span class="btn-label">Delete</span><kbd class="hide-mobile">⌫</kbd></button>
       </section>
 
-      <!-- Joint Properties (shown when joint selected) -->
       <section class="panel-section" id="joint-panel" style="display:none;">
         <div class="sec-label">Selected Joint</div>
-        <div class="prop-row">
-          <span class="prop-name">Fixed</span>
-          <label class="switch"><input type="checkbox" id="chk-fixed" /><span class="switch-track"></span></label>
-        </div>
-        <div class="prop-row">
-          <span class="prop-name">Motor</span>
-          <label class="switch"><input type="checkbox" id="chk-rotating" /><span class="switch-track"></span></label>
-        </div>
-        <div class="prop-row" id="speed-row" style="display:none;">
-          <span class="prop-name">Speed</span>
-          <input type="range" id="joint-speed" class="inline-slider" min="1" max="30" value="10" />
-          <span class="prop-value" id="joint-speed-val">0.10</span>
-        </div>
+        <div class="prop-row"><span class="prop-name">Fixed</span><label class="switch"><input type="checkbox" id="chk-fixed" /><span class="switch-track"></span></label></div>
+        <div class="prop-row"><span class="prop-name">Motor</span><label class="switch"><input type="checkbox" id="chk-rotating" /><span class="switch-track"></span></label></div>
+        <div class="prop-row" id="speed-row" style="display:none;"><span class="prop-name">Speed</span><input type="range" id="joint-speed" class="inline-slider" min="1" max="30" value="10" /><span class="prop-value" id="joint-speed-val">0.10</span></div>
       </section>
 
-      <!-- Examples -->
       <section class="panel-section">
         <div class="sec-label">Examples</div>
         <button class="tool-btn sample-btn" data-sample="4-bars"><span class="btn-label">4-Bar Linkage</span></button>
@@ -109,9 +102,8 @@
       </section>
     </nav>
 
-    <!-- Footer -->
     <div class="sidebar-footer">
-      <button class="clear-btn" id="btn-clear" data-tip="Remove all elements">
+      <button class="clear-btn" id="btn-clear">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         Clear All
       </button>
@@ -120,30 +112,12 @@
 
   <!-- ═══ Settings Drawer ═══════════════════════════════ -->
   <div id="settings-drawer" class="drawer hidden">
-    <div class="drawer-head">
-      <span>Settings</span>
-      <button class="drawer-close" id="btn-settings-close">×</button>
-    </div>
+    <div class="drawer-head"><span>Settings</span><button class="drawer-close" id="btn-settings-close">×</button></div>
     <div class="drawer-body">
-      <div class="setting-row">
-        <span class="setting-name">Sim Speed</span>
-        <input type="range" id="sim-speed" class="inline-slider" min="10" max="120" value="60" />
-        <span class="setting-val" id="sim-speed-val">60 fps</span>
-      </div>
-      <div class="setting-row">
-        <span class="setting-name">Default Motor Speed</span>
-        <input type="range" id="default-motor-speed" class="inline-slider" min="1" max="50" value="10" />
-        <span class="setting-val" id="default-motor-val">0.10</span>
-      </div>
-      <div class="setting-row">
-        <span class="setting-name">Joint Size</span>
-        <input type="range" id="joint-size" class="inline-slider" min="5" max="40" value="20" />
-        <span class="setting-val" id="joint-size-val">20</span>
-      </div>
-      <div class="setting-row">
-        <span class="setting-name">Canvas Color</span>
-        <input type="color" id="canvas-color" value="#f4f5f7" class="color-swatch" />
-      </div>
+      <div class="setting-row"><span class="setting-label">Simulation Speed</span><div class="setting-control"><input type="range" id="sim-speed" class="inline-slider" min="10" max="120" value="60" /><span class="setting-val" id="sim-speed-val">60 fps</span></div></div>
+      <div class="setting-row"><span class="setting-label">Default Motor Speed</span><div class="setting-control"><input type="range" id="default-motor-speed" class="inline-slider" min="1" max="50" value="10" /><span class="setting-val" id="default-motor-val">0.10</span></div></div>
+      <div class="setting-row"><span class="setting-label">Joint Size</span><div class="setting-control"><input type="range" id="joint-size" class="inline-slider" min="5" max="40" value="20" /><span class="setting-val" id="joint-size-val">20</span></div></div>
+      <div class="setting-row"><span class="setting-label">Canvas Color</span><div class="setting-control"><input type="color" id="canvas-color" value="#f4f5f7" class="color-swatch" /></div></div>
     </div>
   </div>
 
@@ -154,23 +128,21 @@
       <span id="status-text">Ready</span>
     </div>
     <div class="bb-right">
-      <button class="bb-btn" id="btn-reset-view" data-tip="Reset view · Home">
+      <button class="bb-btn" id="btn-reset-view">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        Reset
+        <span class="hide-mobile">Reset</span>
       </button>
       <div class="zoom-row">
-        <button class="zoom-btn" id="btn-zoom-out" data-tip="Zoom out">−</button>
-        <input type="range" id="zoom-slider" min="5" max="100" value="50" />
-        <button class="zoom-btn" id="btn-zoom-in" data-tip="Zoom in">+</button>
+        <button class="zoom-btn" id="btn-zoom-out">−</button>
+        <input type="range" id="zoom-slider" class="hide-mobile" min="5" max="100" value="50" />
+        <button class="zoom-btn" id="btn-zoom-in">+</button>
         <span class="zoom-pct" id="zoom-pct">100%</span>
       </div>
     </div>
   </footer>
 
-  <!-- ═══ Tooltip ═══════════════════════════════════════ -->
   <div id="tooltip" class="tooltip"></div>
 
-  <!-- ═══ Scripts ═══════════════════════════════════════ -->
   <script src="vec.js"></script>
   <script src="circle.js"></script>
   <script src="point.js"></script>

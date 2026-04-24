@@ -1,17 +1,18 @@
 /**
- * ManageGUI — HTML controller for Kinematic Studio v2.
- * Handles tools, joint property panel, settings drawer, zoom, tooltips.
+ * ManageGUI — Responsive HTML controller.
+ * Desktop: sidebar always visible. Mobile: sidebar slides in/out via hamburger.
  */
 class ManageGUI {
   constructor() {
     this.activeTool = null;
     this._toolBtns = [];
-    this._simInterval = null;
     this._canvasColor = '#f4f5f7';
     this._defaultMotorSpeed = 0.1;
+    this._sidebarOpen = false;
   }
 
   init() {
+    this._wireSidebar();
     this._wireTools();
     this._wireTopBar();
     this._wireJointPanel();
@@ -22,6 +23,57 @@ class ManageGUI {
     this._wireTooltips();
     this._setStatus('Ready', 'idle');
   }
+
+  // ═══ Sidebar toggle ═════════════════════════════════
+
+  _wireSidebar() {
+    const backdrop = document.getElementById('sidebar-backdrop');
+    document.getElementById('btn-menu').addEventListener('click', () => this._toggleSidebar());
+    backdrop.addEventListener('click', () => this._closeSidebar());
+
+    // Re-evaluate sidebar state on resize (e.g., rotating phone)
+    window.addEventListener('resize', () => {
+      if (!this._isMobile()) {
+        // Moving to desktop: close mobile overlay state
+        document.getElementById('sidebar').classList.remove('open');
+        backdrop.classList.remove('visible');
+        backdrop.classList.add('hidden');
+        this._sidebarOpen = false;
+      }
+      // Resize canvas after sidebar state settles
+      setTimeout(resizeCanvas, 50);
+    });
+  }
+
+  _toggleSidebar() {
+    this._sidebarOpen ? this._closeSidebar() : this._openSidebar();
+  }
+
+  _openSidebar() {
+    if (this._isMobile()) {
+      document.getElementById('sidebar').classList.add('open');
+      document.getElementById('sidebar-backdrop').classList.remove('hidden');
+      document.getElementById('sidebar-backdrop').classList.add('visible');
+    } else {
+      document.body.classList.remove('sidebar-collapsed');
+      setTimeout(resizeCanvas, 30);
+    }
+    this._sidebarOpen = true;
+  }
+
+  _closeSidebar() {
+    if (this._isMobile()) {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-backdrop').classList.remove('visible');
+      document.getElementById('sidebar-backdrop').classList.add('hidden');
+    } else {
+      document.body.classList.add('sidebar-collapsed');
+      setTimeout(resizeCanvas, 30);
+    }
+    this._sidebarOpen = false;
+  }
+
+  _isMobile() { return window.innerWidth <= 768; }
 
   // ═══ Tools ══════════════════════════════════════════
 
@@ -35,6 +87,7 @@ class ManageGUI {
       this._clearActiveTool();
       this._hideJointPanel();
       this._setStatus('Canvas cleared', 'idle');
+      if (this._isMobile()) this._closeSidebar();
     });
   }
 
@@ -45,6 +98,7 @@ class ManageGUI {
       if (tool === 'join') mech.join();
       if (tool === 'delete') mech.Delete();
       this._flash(btn);
+      if (this._isMobile()) this._closeSidebar();
       return;
     }
     if (this.activeTool === tool) { this._clearActiveTool(); return; }
@@ -53,7 +107,8 @@ class ManageGUI {
     btn.classList.add('active');
     mech.clickinfo = tool;
     mech.manageclick();
-    this._setStatus(`Click canvas to place ${tool}`, 'tool');
+    this._setStatus(`Tap to place ${tool}`, 'tool');
+    if (this._isMobile()) this._closeSidebar();
   }
 
   _clearActiveTool() {
@@ -64,33 +119,48 @@ class ManageGUI {
     if (!mech.updating) this._setStatus('Ready', 'idle');
   }
 
-  _flash(btn) {
-    btn.classList.add('active');
-    setTimeout(() => btn.classList.remove('active'), 150);
-  }
+  _flash(btn) { btn.classList.add('active'); setTimeout(() => btn.classList.remove('active'), 150); }
 
   // ═══ Top Bar ════════════════════════════════════════
 
   _wireTopBar() {
-    document.getElementById('btn-save').addEventListener('click', () => saveManager.showSaveDialog());
-    document.getElementById('btn-load').addEventListener('click', () => saveManager.showLoadDialog());
+    // Desktop save/load
+    const btnSave = document.getElementById('btn-save');
+    const btnLoad = document.getElementById('btn-load');
+    if (btnSave) btnSave.addEventListener('click', () => saveManager.showSaveDialog());
+    if (btnLoad) btnLoad.addEventListener('click', () => saveManager.showLoadDialog());
 
+    // Mobile save/load (inside sidebar)
+    const btnSaveM = document.getElementById('btn-save-m');
+    const btnLoadM = document.getElementById('btn-load-m');
+    if (btnSaveM) btnSaveM.addEventListener('click', () => { this._closeSidebar(); saveManager.showSaveDialog(); });
+    if (btnLoadM) btnLoadM.addEventListener('click', () => { this._closeSidebar(); saveManager.showLoadDialog(); });
+
+    // Play/pause
     const simBtn = document.getElementById('btn-sim');
     simBtn.addEventListener('click', () => {
       mech.updating = !mech.updating;
       simBtn.classList.toggle('active', mech.updating);
       document.getElementById('icon-play').classList.toggle('hidden', mech.updating);
       document.getElementById('icon-pause').classList.toggle('hidden', !mech.updating);
-      this._setStatus(mech.updating ? 'Simulation running' : 'Simulation paused',
-                      mech.updating ? 'running' : 'idle');
+      this._setStatus(mech.updating ? 'Running' : 'Paused', mech.updating ? 'running' : 'idle');
     });
 
-    document.getElementById('chk-grid').addEventListener('change', (e) => {
-      mech.showGrid = e.target.checked;
-    });
+    // Grid (desktop)
+    const gridCb = document.getElementById('chk-grid');
+    if (gridCb) gridCb.addEventListener('change', e => { mech.showGrid = e.target.checked; });
+
+    // Grid (mobile, inside sidebar)
+    const gridCbM = document.getElementById('chk-grid-m');
+    if (gridCbM) {
+      gridCbM.addEventListener('change', e => {
+        mech.showGrid = e.target.checked;
+        if (gridCb) gridCb.checked = e.target.checked;
+      });
+    }
   }
 
-  // ═══ Joint Properties Panel ═════════════════════════
+  // ═══ Joint Panel ════════════════════════════════════
 
   _wireJointPanel() {
     const fixedCb = document.getElementById('chk-fixed');
@@ -99,23 +169,16 @@ class ManageGUI {
     const speedVal = document.getElementById('joint-speed-val');
     const speedRow = document.getElementById('speed-row');
 
-    fixedCb.addEventListener('change', () => {
-      mech.showFixed = fixedCb.checked;
-      mech.updatejoint();
-    });
-
+    fixedCb.addEventListener('change', () => { mech.showFixed = fixedCb.checked; mech.updatejoint(); });
     motorCb.addEventListener('change', () => {
       mech.showRotating = motorCb.checked;
       mech.updatejoint();
       speedRow.style.display = motorCb.checked ? 'flex' : 'none';
     });
-
     speedSlider.addEventListener('input', () => {
       const v = parseFloat(speedSlider.value) / 100;
       speedVal.textContent = v.toFixed(2);
-      if (mech.jpointer && mech.jpointer.selected) {
-        mech.jpointer.avel = v;
-      }
+      if (mech.jpointer?.selected) mech.jpointer.avel = v;
     });
   }
 
@@ -123,18 +186,15 @@ class ManageGUI {
     if (!j) return;
     const panel = document.getElementById('joint-panel');
     panel.style.display = '';
-
     const fixedCb = document.getElementById('chk-fixed');
     const motorCb = document.getElementById('chk-rotating');
     const speedSlider = document.getElementById('joint-speed');
     const speedVal = document.getElementById('joint-speed-val');
     const speedRow = document.getElementById('speed-row');
-
     fixedCb.checked = j.isStatic;
     motorCb.checked = j.avel !== 0;
     mech.showFixed = j.isStatic;
     mech.showRotating = j.avel !== 0;
-
     speedRow.style.display = j.avel !== 0 ? 'flex' : 'none';
     const spd = Math.abs(j.avel);
     speedSlider.value = Math.round(spd * 100);
@@ -149,24 +209,18 @@ class ManageGUI {
 
   _wireBottomBar() {
     const slider = document.getElementById('zoom-slider');
-    slider.addEventListener('input', () => {
+    if (slider) slider.addEventListener('input', () => {
       mech.scale = (parseFloat(slider.value) / 100) * 1.5 + 0.5;
       this._syncZoomPct();
     });
-
     document.getElementById('btn-reset-view').addEventListener('click', () => {
-      mech.resetView();
-      this._syncAll();
-      this._setStatus('View reset', 'idle');
+      mech.resetView(); this._syncAll(); this._setStatus('View reset', 'idle');
     });
-
     document.getElementById('btn-zoom-in').addEventListener('click', () => {
-      mech.scale = Math.min(5, mech.scale * 1.15);
-      this._syncAll();
+      mech.scale = Math.min(5, mech.scale * 1.2); this._syncAll();
     });
     document.getElementById('btn-zoom-out').addEventListener('click', () => {
-      mech.scale = Math.max(0.1, mech.scale / 1.15);
-      this._syncAll();
+      mech.scale = Math.max(0.1, mech.scale / 1.2); this._syncAll();
     });
   }
 
@@ -174,14 +228,12 @@ class ManageGUI {
     const el = document.getElementById('zoom-pct');
     if (el) el.textContent = Math.round(mech.scale * 100) + '%';
   }
-
   _syncSlider() {
-    const slider = document.getElementById('zoom-slider');
-    if (slider) slider.value = Math.round(((mech.scale - 0.5) / 1.5) * 100);
+    const s = document.getElementById('zoom-slider');
+    if (s) s.value = Math.round(((mech.scale - 0.5) / 1.5) * 100);
     this._syncZoomPct();
   }
-
-  _syncAll() { this._syncSlider(); this._syncZoomPct(); }
+  _syncAll() { this._syncSlider(); }
   syncZoom() { this._syncAll(); }
 
   // ═══ Samples ════════════════════════════════════════
@@ -194,39 +246,32 @@ class ManageGUI {
         if (id === '6-bars') loader.sixbars();
         if (id === 'mech1') loader.mech1();
         if (id === 'mech2') loader.mech2();
-        this._clearActiveTool();
-        this._flash(btn);
+        this._clearActiveTool(); this._flash(btn);
         this._setStatus('Loaded: ' + btn.textContent.trim(), 'idle');
+        if (this._isMobile()) this._closeSidebar();
       });
     }
   }
 
-  // ═══ Settings Drawer ════════════════════════════════
+  // ═══ Settings ═══════════════════════════════════════
 
   _wireSettings() {
     const drawer = document.getElementById('settings-drawer');
-    document.getElementById('btn-settings').addEventListener('click', (e) => {
-      e.stopPropagation();
-      drawer.classList.toggle('hidden');
+    document.getElementById('btn-settings').addEventListener('click', e => {
+      e.stopPropagation(); drawer.classList.toggle('hidden');
     });
-    document.getElementById('btn-settings-close').addEventListener('click', () => {
-      drawer.classList.add('hidden');
-    });
-    // Close when clicking outside
-    document.addEventListener('mousedown', (e) => {
-      if (drawer.classList.contains('hidden')) return;
-      if (!drawer.contains(e.target) && e.target.id !== 'btn-settings' && !e.target.closest('#btn-settings')) {
+    document.getElementById('btn-settings-close').addEventListener('click', () => drawer.classList.add('hidden'));
+    document.addEventListener('mousedown', e => {
+      if (!drawer.classList.contains('hidden') && !drawer.contains(e.target) && !e.target.closest('#btn-settings'))
         drawer.classList.add('hidden');
-      }
     });
 
-    // Sim speed (FPS)
+    // Sim speed
     const simSpd = document.getElementById('sim-speed');
     const simVal = document.getElementById('sim-speed-val');
     simSpd.addEventListener('input', () => {
       const fps = parseInt(simSpd.value);
       simVal.textContent = fps + ' fps';
-      // Restart the game loop at new fps
       if (window._gameLoopId) clearInterval(window._gameLoopId);
       window._gameLoopId = setInterval(gameloop, 1000 / fps);
     });
@@ -242,17 +287,10 @@ class ManageGUI {
     // Joint size
     const jsz = document.getElementById('joint-size');
     const jsv = document.getElementById('joint-size-val');
-    jsz.addEventListener('input', () => {
-      const v = parseInt(jsz.value);
-      jsv.textContent = v;
-      // Update the default joint radius for new joints
-      mech.defaultJointRadius = v;
-    });
+    jsz.addEventListener('input', () => { const v = parseInt(jsz.value); jsv.textContent = v; mech.defaultJointRadius = v; });
 
     // Canvas color
-    document.getElementById('canvas-color').addEventListener('input', (e) => {
-      this._canvasColor = e.target.value;
-    });
+    document.getElementById('canvas-color').addEventListener('input', e => { this._canvasColor = e.target.value; });
   }
 
   getCanvasColor() { return this._canvasColor; }
@@ -261,11 +299,10 @@ class ManageGUI {
   // ═══ Keyboard ═══════════════════════════════════════
 
   _wireKeyboard() {
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       const key = e.key.toLowerCase();
       const map = { j: 'joint', g: 'gear', l: 'link', p: 'path' };
-
       if (map[key]) {
         const btn = document.querySelector(`.tool-btn[data-tool="${map[key]}"]`);
         if (btn) this._handleTool(map[key], btn);
@@ -276,6 +313,7 @@ class ManageGUI {
       if (key === 'escape') {
         this._clearActiveTool(); mech.clear();
         document.getElementById('settings-drawer').classList.add('hidden');
+        this._closeSidebar();
       }
       if (key === 'home') { mech.resetView(); this._syncAll(); e.preventDefault(); }
       if (e.ctrlKey && key === 's') { saveManager.showSaveDialog(); e.preventDefault(); }
@@ -283,13 +321,13 @@ class ManageGUI {
     });
   }
 
-  // ═══ Tooltips ═══════════════════════════════════════
+  // ═══ Tooltips (desktop only) ════════════════════════
 
   _wireTooltips() {
+    if ('ontouchstart' in window) return; // skip on touch devices
     const tip = document.getElementById('tooltip');
     let timer = null;
-
-    document.addEventListener('mouseover', (e) => {
+    document.addEventListener('mouseover', e => {
       const el = e.target.closest('[data-tip]');
       if (!el) return;
       clearTimeout(timer);
@@ -305,8 +343,7 @@ class ManageGUI {
         tip.style.top = (top + tip.offsetHeight > window.innerHeight ? r.top - tip.offsetHeight - 8 : top) + 'px';
       }, 450);
     });
-
-    document.addEventListener('mouseout', (e) => {
+    document.addEventListener('mouseout', e => {
       if (e.target.closest('[data-tip]')) { clearTimeout(timer); tip.classList.remove('show'); }
     });
     document.addEventListener('mousedown', () => { clearTimeout(timer); tip.classList.remove('show'); });
@@ -325,8 +362,7 @@ class ManageGUI {
     }
   }
 
-  // ═══ Stubs ══════════════════════════════════════════
-
+  // Stubs
   mouseup() {} mousemove() {} mousedown() { return false; }
   update() {} draw() {} prepare() {} resize() {}
 }
